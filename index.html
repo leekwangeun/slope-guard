@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slope Guard</title>
+<style>
+  :root {
+    --u: 0.5;                       /* 1 unit = 1 px of a 1920 x 1080 frame, set from the window size */
+    --hu: 0.5;                      /* the same for the simulation HUD, with a floor for phones */
+    --stage: #e7e7e7; --card: rgba(255, 255, 255, 0.93); --paper: #fff;
+    --ink: #121216; --gray: #787c84; --foot: #6e727a; --dark: #464a52; --line: #d9dbe0;
+    --muted: #5a5e66;               /* small text on the menu and panel: 5:1 or more on white and on the stage grey */
+    --green: #22a050; --red: #d63028; --yellow: #f2b605;
+    --font: 'Malgun Gothic', 'Apple SD Gothic Neo', system-ui, sans-serif;
+    --mono: Consolas, 'D2Coding', ui-monospace, monospace;
+    --edge: 0 0 0 1px rgba(18, 18, 22, 0.12);       /* one hairline instead of soft drop shadows */
+  }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--stage); color: var(--ink); font-family: var(--font); word-break: keep-all; }
+  [hidden] { display: none !important; }
+  #app { position: fixed; inset: 0; }
+  #app canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  kbd { display: inline-grid; place-items: center; min-width: 1.7em; padding: 0.1em 0.4em; box-sizing: border-box; border-radius: 0.35em;
+    background: var(--paper); box-shadow: inset 0 -2px 0 var(--line); font: inherit; font-weight: 700; color: var(--ink); }
+
+  /* screens fade in and out; a hidden screen takes no clicks */
+  .screen { transition: opacity 0.35s, transform 0.35s, visibility 0s; }
+  .screen.off { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.35s, transform 0.35s, visibility 0s 0.35s; }
+
+  /* ---------------- main menu ---------------- */
+  #menu { position: fixed; inset: 0; box-sizing: border-box; display: flex; flex-direction: column; pointer-events: none;
+    padding: max(24px, calc(80px * var(--u))) max(24px, calc(96px * var(--u))) max(20px, calc(56px * var(--u))); }
+  #menu .stack { margin-block: auto; display: grid; justify-items: start; gap: max(28px, calc(60px * var(--u)));
+    width: min(100%, max(400px, calc(720px * var(--u)))); pointer-events: auto; }
+  .head { display: grid; justify-items: start; }
+  .kicker { margin: 0; font-size: max(12px, calc(20px * var(--u))); letter-spacing: 0.06em; color: var(--dark); }
+  .head h1 { margin: max(6px, calc(12px * var(--u))) 0 max(12px, calc(26px * var(--u)));
+    font: 800 max(46px, calc(132px * var(--u)))/0.95 'Segoe UI', var(--font); letter-spacing: -0.03em; white-space: nowrap; }
+  .tagline { margin: 0; font-size: max(15px, calc(30px * var(--u))); font-weight: 600; color: var(--dark); }
+  .entries { display: grid; gap: max(8px, calc(14px * var(--u))); width: 100%; }
+  .entry { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: max(12px, calc(24px * var(--u)));
+    width: 100%; padding: max(12px, calc(22px * var(--u))) max(14px, calc(28px * var(--u))) max(12px, calc(22px * var(--u))) max(12px, calc(22px * var(--u)));
+    border: 0; border-radius: max(10px, calc(16px * var(--u))); background: var(--card); color: var(--ink);
+    box-shadow: 0 0 0 1px rgba(18, 18, 22, 0.08), 0 6px 20px rgba(18, 18, 22, 0.08);
+    font: inherit; text-align: left; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+  /* the screen number: a plain index figure, set off from the title by a thin rule */
+  .entry .no { align-self: stretch; display: grid; place-items: center; padding-right: max(12px, calc(22px * var(--u)));
+    border-right: 1px solid var(--line); color: var(--gray); font-family: var(--mono); font-size: max(15px, calc(26px * var(--u)));
+    font-variant-numeric: tabular-nums; transition: color 0.2s; }
+  .entry b { display: block; font-size: max(18px, calc(36px * var(--u))); }
+  .entry .go { font-size: max(18px, calc(30px * var(--u))); color: var(--muted); transition: transform 0.2s, color 0.2s; }
+  .entry:hover, .entry:focus-visible { outline: none; transform: translateX(max(4px, calc(8px * var(--u)))); box-shadow: 0 0 0 2px var(--ink); }
+  .entry:hover .no, .entry:focus-visible .no { color: var(--ink); }
+  .entry:hover .go, .entry:focus-visible .go { transform: translateX(max(3px, calc(6px * var(--u)))); color: var(--ink); }
+  .hint { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0.45em; font-size: max(12px, calc(18px * var(--u))); color: var(--muted); }
+  .hint .sep { width: max(14px, calc(24px * var(--u))); }
+
+  /* specs as a drawing title block */
+  .spec { display: flex; margin: 0; width: max-content; max-width: 100%; border: 1.5px solid var(--ink); background: rgba(255, 255, 255, 0.55); pointer-events: auto; }
+  .spec div { padding: 10px 16px; border-left: 1px solid var(--ink); }
+  .spec div:first-child { border-left: 0; }
+  .spec dt { font-size: max(11px, calc(15px * var(--u))); color: var(--muted); }
+  .spec dd { margin: max(2px, calc(4px * var(--u))) 0 0; font-size: max(12px, calc(19px * var(--u))); font-weight: 700; white-space: nowrap; }
+
+  /* first appearance: the menu rises in, one line after another */
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+  #menu.intro [style*="--i"] { animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; animation-delay: calc(var(--i) * 80ms + 150ms); }
+  @media (prefers-reduced-motion: reduce) { #menu.intro [style*="--i"] { animation: none; } .screen, .entry { transition: none; } }
+  @media (max-width: 1099px), (max-height: 640px) { .spec { display: none; } }
+  @media (max-width: 700px) {
+    #menu { padding: 16px; }
+    #menu .stack { margin-block: auto 0; gap: 14px; }
+    .hint { display: none; }
+    .kicker { font-size: 10.5px; }
+    .head h1 { margin: 4px 0 8px; font-size: 36px; }
+    .tagline { font-size: 12.5px; }
+    .entry { gap: 10px; padding: 10px 12px; border-radius: 10px; }
+    .entry .no { padding-right: 10px; font-size: 12.5px; }
+    .entry b { font-size: 14.5px; }
+    .entry .go { font-size: 13px; }
+  }
+
+  /* ---------------- blueprint panel ---------------- */
+  #model-ui { position: fixed; top: 16px; left: 16px; width: 284px; max-height: calc(100% - 32px); overflow: auto; box-sizing: border-box;
+    display: grid; gap: 10px; padding: 14px; border-radius: 10px; background: var(--card); box-shadow: var(--edge); font-size: 14px; line-height: 1.45; }
+  #model-ui.off { transform: translateX(-12px); }
+  #model-ui .top { display: flex; align-items: center; gap: 10px; }
+  #model-ui h2 { margin: 0; font-size: 17px; }
+  #model-ui .label { color: var(--muted); font-size: 12px; letter-spacing: 0.04em; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .row .btn { flex: 1 1 auto; }
+  .btn { padding: 6px 9px; border-radius: 6px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+  .btn:hover { border-color: var(--ink); }
+  .btn.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+  /* the camera stops are quieter than the other controls: grey keys, no outline until hovered */
+  #views .btn { border-color: transparent; background: #eff0f2; }
+  #views .btn:hover { border-color: var(--ink); }
+  #views .btn.on { background: var(--ink); border-color: var(--ink); }
+  .btn.back { padding: 5px 9px; }
+  label.check { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+  #model-stats, #model-status { margin: 0; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: pre-line; }
+  #model-ui .extra { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; border: 1px solid var(--line); border-radius: 6px; }
+  .seg .btn { border: 0; border-radius: 0; }
+  .seg .btn + .btn { border-left: 1px solid var(--line); }
+  .btn.tour { font-weight: 700; }
+  .btn.more { display: none; margin-left: auto; }
+
+  /* parts list */
+  .bom-box summary { cursor: pointer; color: var(--muted); font-size: 12px; letter-spacing: 0.04em; }
+  #bom { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 1px; }   /* one scroll: the panel's */
+  #bom button { display: grid; grid-template-columns: 1fr; gap: 8px; width: 100%; padding: 5px 6px; border: 0; border-radius: 6px;
+    background: transparent; color: var(--ink); font: inherit; font-size: 13px; line-height: 1.35; text-align: left; cursor: pointer; }
+  #bom button:hover { background: #eef0f2; }
+  #bom button.on { background: var(--ink); color: #fff; }
+  #bom .no { display: none; }
+  #bom b { display: block; }
+  #bom small { display: block; color: var(--muted); font-size: 11.5px; }
+  #bom button.on .no, #bom button.on small { color: #c9ccd2; }
+
+  @media (max-width: 640px) {
+    /* a phone: a short bar at the bottom with the camera stops, the rest behind 더보기 */
+    #model-ui { top: auto; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); left: 10px; right: 10px; width: auto; max-height: 62%; gap: 7px; padding: 9px;
+      border-radius: 8px; font-size: 12.5px; }
+    #model-ui h2 { font-size: 14.5px; }
+    #model-ui .btn, label.check { font-size: 11.5px; }
+    #model-ui .btn { padding: 5px 8px; }
+    #bom button { font-size: 11.5px; }
+    #bom small { font-size: 10.5px; }
+    #model-ui > .label { display: none; }
+    #model-ui .btn.more { display: inline-block; }
+    #views { display: flex; overflow-x: auto; gap: 5px; scrollbar-width: none; overscroll-behavior-x: contain;
+      mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }   /* the faded right edge says there is more */
+    #views .btn { flex: none; }
+    #model-ui .extra { display: none; }
+    #model-ui.open .extra { display: grid; }
+  }
+
+  /* ---------------- part card, dimension labels ---------------- */
+  #part-card { position: fixed; top: 16px; right: 16px; z-index: 4; display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start;
+    width: min(360px, calc(100% - 32px)); box-sizing: border-box; padding: 14px 10px 14px 14px; border-radius: 10px; background: var(--card);
+    box-shadow: var(--edge); font-size: 14px; line-height: 1.5; }
+  #part-card .no { display: none; }
+  #part-card b { display: block; font-size: 16px; }
+  #part-card .sub { display: block; margin-top: 1px; color: var(--muted); font-size: 13px; }
+  #part-card .role { margin: 6px 0 0; }
+  #part-card .x { visibility: hidden; padding: 0 6px; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 20px; line-height: 1.2; cursor: pointer; }
+  #part-card.pinned .x { visibility: visible; }
+  @media (max-width: 640px) {
+    #part-card { top: 10px; left: 10px; right: 10px; width: auto; gap: 9px; padding: 10px 8px 10px 10px; border-radius: 8px; font-size: 11.5px; }
+    #part-card b { font-size: 13.5px; }
+    #part-card .sub { font-size: 11px; }
+    #part-card .role { margin-top: 4px; }
+    body #dim-labels span { font-size: 10px; }
+  }
+  #dim-labels { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+  #dim-labels.on { opacity: 1; }
+  #dim-labels span { position: absolute; left: 0; top: 0; padding: 2px 6px; border-radius: 2px; background: rgba(255, 255, 255, 0.94);
+    font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+
+  /* ---------------- "drag me" hint: a hand that sways over the model until the first touch ---------------- */
+  #drag-hint { position: fixed; left: 50%; top: 56%; z-index: 3; display: grid; grid-template-columns: auto auto; align-items: center; gap: 10px;
+    padding: 8px 16px 8px 12px; border-radius: 10px; background: rgba(255, 255, 255, 0.92); box-shadow: var(--edge); color: var(--ink);
+    font-size: 14px; font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0; transform: translate(-50%, -40%); transition: opacity 0.4s, transform 0.4s; }
+  #drag-hint.on { opacity: 1; transform: translate(-50%, -50%); }
+  #drag-hint svg { width: 48px; height: 45px; overflow: visible; }
+  #drag-hint .hand { transform-box: fill-box; transform-origin: 50% 100%; animation: sway 1.4s ease-in-out infinite alternate; }
+  @keyframes sway { from { transform: translateX(-11px) rotate(-9deg); } to { transform: translateX(11px) rotate(9deg); } }
+  @media (prefers-reduced-motion: reduce) { #drag-hint .hand { animation: none; } }
+
+  /* ---------------- simulation HUD (laid out on a 1920 x 1080 frame, like the video) ----------------
+     --hu is the frame scale, but never so small that a phone cannot read it */
+  #sim-ui, #tip-ui { position: fixed; inset: 0; pointer-events: none; }
+  .hud { position: fixed; pointer-events: none; }
+  .card { background: var(--card); border-radius: calc(10px * var(--hu)); box-shadow: var(--edge); }
+  #back { position: fixed; z-index: 5; left: max(12px, calc(44px * var(--hu))); top: max(12px, calc(44px * var(--hu))); display: none;
+    padding: 7px 12px; border: 0; border-radius: 8px; background: var(--card); box-shadow: var(--edge); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+  #back:hover { background: var(--paper); box-shadow: 0 0 0 1.5px var(--ink); }
+  body.runs #back { display: block; }
+  #foot, #tip-foot { left: calc(44px * var(--hu)); bottom: calc(28px * var(--hu)); font-size: calc(20px * var(--hu)); color: var(--foot); }
+  .tag { left: 0; top: 0; display: flex; align-items: center; gap: calc(6px * var(--hu)); will-change: transform; }
+  .tag .box { position: relative; display: flex; align-items: center; width: calc(232px * var(--hu)); height: calc(50px * var(--hu));
+    box-sizing: border-box; padding: 0 calc(10px * var(--hu)) 0 calc(8px * var(--hu)); background: var(--card); border-radius: calc(12px * var(--hu)); }
+  .tag .box::after { content: ''; position: absolute; left: var(--px, 50%); bottom: calc(-11px * var(--hu)); transform: translateX(-50%);
+    border: calc(9px * var(--hu)) solid transparent; border-top: calc(12px * var(--hu)) solid var(--card); border-bottom: 0; }
+  .chip { display: grid; place-items: center; height: calc(34px * var(--hu)); border-radius: calc(9px * var(--hu));
+    color: #fff; font-weight: 700; font-size: calc(19px * var(--hu)); }
+  .tag .chip { width: calc(100px * var(--hu)); }
+  .tag .v { margin-left: calc(10px * var(--hu)); font-weight: 700; font-size: calc(26px * var(--hu)); font-variant-numeric: tabular-nums; }
+  .tag .unit { margin-left: auto; font-size: calc(15px * var(--hu)); color: var(--gray); }
+  .tag .brake { width: calc(70px * var(--hu)); background: var(--red); font-size: calc(18px * var(--hu)); opacity: 0; }
+  .tag.braking .brake { opacity: 1; }
+  #graph { right: calc(48px * var(--hu)); bottom: calc(60px * var(--hu)); width: calc(572px * var(--hu)); aspect-ratio: 572 / 330; }
+  #graph canvas { width: 100%; height: 100%; display: block; }
+  #lower, #tip-lower { left: calc(44px * var(--hu)); bottom: calc(40px * var(--hu)); display: grid; justify-items: start; gap: calc(6px * var(--hu));
+    padding: calc(16px * var(--hu)) calc(24px * var(--hu)); border-radius: calc(12px * var(--hu)); background: var(--card); box-shadow: var(--edge); opacity: 0; }
+  #lower b, #tip-lower b { font-size: calc(38px * var(--hu)); letter-spacing: -0.01em; }
+  #lower span, #tip-lower span { font-size: calc(26px * var(--hu)); color: var(--dark); }
+  #tip-lower { bottom: calc(80px * var(--hu)); transition: opacity 0.4s; }
+  #tip-lower b, #tip-lower span { white-space: nowrap; }
+  /* the starburst over the OFF car: pops in once and stays still */
+  #tip-burst { left: 0; top: 0; width: max(190px, calc(330px * var(--hu))); aspect-ratio: 240 / 150; will-change: transform; }
+  #tip-burst .burst { position: relative; width: 100%; height: 100%; display: grid; place-items: center;
+    transform: rotate(-3deg); animation: burst-pop 0.35s cubic-bezier(0.2, 0.8, 0.3, 1.2) both; }
+  #tip-burst svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  #tip-burst polygon { fill: var(--yellow); stroke: var(--ink); stroke-width: 3; stroke-linejoin: round; }
+  #tip-burst p { position: relative; margin: 0; display: grid; justify-items: center; gap: 2px; text-align: center; line-height: 1.15; }
+  #tip-burst b { color: #a3241a; font-size: max(15px, calc(30px * var(--hu))); font-weight: 800; letter-spacing: -0.02em; }
+  @keyframes burst-pop { from { opacity: 0; transform: scale(0.4) rotate(-10deg); } }
+  @media (prefers-reduced-motion: reduce) { #tip-burst .burst { animation: none; } }
+  /* tip-over test: a roll readout per car, like a meter: who, the angle, a thin 0 to 90° scale with the firmware's 50° tick, what the motors do */
+  #tip-gauges { display: contents; }                 /* on a wide screen each readout is fixed to its car */
+  /* two lines: who and the angle, then what the motors do; the roll fills a thin line along the bottom edge (the dark tick is 50°) */
+  .ttag .box { position: relative; display: grid; gap: calc(4px * var(--hu)); width: calc(270px * var(--hu)); height: auto; overflow: hidden;
+    padding: calc(12px * var(--hu)) calc(16px * var(--hu)) calc(16px * var(--hu)); border-radius: calc(10px * var(--hu)); box-shadow: var(--edge); }
+  .ttag .box::after { display: none; }
+  .ttag .top { display: flex; align-items: baseline; justify-content: space-between; gap: calc(10px * var(--hu)); font-size: calc(21px * var(--hu)); white-space: nowrap; }
+  .ttag .who { font-weight: 800; color: var(--dark); }
+  #tip-ON .who { color: #17803d; }
+  .ttag .val { color: var(--gray); }
+  .ttag .deg { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .ttag .state { font-size: calc(16px * var(--hu)); font-weight: 600; color: var(--dark); }
+  .ttag .state[data-tone="ok"] { color: #17803d; }
+  .ttag .state[data-tone="bad"] { color: #b42318; }
+  .ttag .gauge { position: absolute; left: 0; right: 0; bottom: 0; height: calc(5px * var(--hu)); background: #e6e8eb; }
+  .ttag .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--dark); }
+  .ttag .fill.over { background: var(--red); }
+  .ttag .mark { position: absolute; left: 55.6%; top: 0; bottom: 0; width: 2px; background: var(--ink); }
+  /* ---------------- Bluetooth terminal, dressed like the phone app used with the real car ---------------- */
+  #term { position: fixed; right: calc(48px * var(--hu)); top: calc(44px * var(--hu)); bottom: calc(412px * var(--hu)); width: calc(572px * var(--hu));
+    display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto auto; overflow: hidden; border-radius: 12px; background: #2b2b2e; color: #ececf0;
+    box-shadow: 0 2px 10px rgba(18, 18, 22, 0.16); font-size: max(12px, calc(17px * var(--hu))); pointer-events: auto; }
+  #term header { display: flex; align-items: center; gap: 6px; padding: 8px 8px 8px 12px; background: #1565c0; color: #fff; }
+  @media (min-aspect-ratio: 801/1000) { body.tip #term { bottom: calc(120px * var(--hu)); } }   /* no graph under it on the tip-over screen */
+  #term header b { font-size: 1.1em; }
+  /* the device name gives way first when the bar is narrow; the buttons stay at the right end */
+  #term header .dev { display: inline-flex; align-items: center; gap: 2px; min-width: 0; margin-right: auto; overflow: hidden; white-space: nowrap; font-size: 0.85em; opacity: 0.85; }
+  #term header .dev svg { flex: none; }
+  #term header .dev path, .tag .bt path { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  /* which car the terminal is connected to: a Bluetooth badge on its speed tag and a dotted line up to the terminal */
+  .tag .bt { position: absolute; right: calc(-10px * var(--hu)); top: calc(-10px * var(--hu)); display: none; place-items: center;
+    width: max(16px, calc(26px * var(--hu))); height: max(16px, calc(26px * var(--hu))); border-radius: 50%; background: #1565c0; color: #fff;
+    box-shadow: 0 0 0 1.5px #fff; }
+  .tag .bt svg { width: 72%; height: 72%; }
+  .tag.linked .bt { display: grid; }
+  .tag.linked .box { box-shadow: 0 0 0 1.5px #1565c0; }
+  #link, #tip-link { left: 0; top: 0; width: 100%; height: 100%; overflow: visible; opacity: 0; }
+  #link path, #tip-link path { fill: none; stroke: #1565c0; stroke-opacity: 0.6; stroke-width: 2; stroke-dasharray: 1 6; stroke-linecap: round; }
+  #link.live path, #tip-link.live path { animation: flow 0.5s linear infinite; }
+  @keyframes flow { to { stroke-dashoffset: -8; } }
+  @media (prefers-reduced-motion: reduce) { #link.live path, #tip-link.live path { animation: none; } }
+  #term header button { border: 0; border-radius: 6px; background: rgba(255, 255, 255, 0.16); color: #fff; font: inherit; font-size: 0.85em; white-space: nowrap; cursor: pointer; }
+  #term-sw { padding: 4px 8px; }
+  #term header b, #term header button { flex: none; }
+  #term-clear { display: grid; place-items: center; padding: 4px 6px; }
+  /* folded: only the blue title bar stays, so the cars behind it can be seen */
+  #term-fold { display: grid; place-items: center; padding: 3px 5px; }
+  #term-fold svg { transition: transform 0.2s; }
+  #term.folded #term-fold svg { transform: rotate(180deg); }
+  #term.folded { grid-template-rows: auto; }
+  #term.folded > :not(header) { display: none !important; }
+  @media (min-aspect-ratio: 801/1000) { #term.folded { bottom: auto !important; } }
+  #term-log { overflow-y: auto; overscroll-behavior: contain; padding: 6px 10px; font-family: Consolas, 'D2Coding', ui-monospace, monospace; line-height: 1.45; }
+  #term-log .ln { white-space: pre-wrap; word-break: break-all; }
+  #term-log .ts { margin-right: 0.6em; color: #cfcfd4; }
+  #term-log .data { color: #3ddc4f; }
+  #term-log .sys { color: #9aa0a6; }
+  #term-log .echo { color: #7cc4ff; }
+  #term .macros { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; padding: 6px 6px 4px; }
+  #term .macros button { display: grid; gap: 1px; padding: 5px 2px; border: 0; border-radius: 6px; background: #4a4a50; color: #fff;
+    font: inherit; font-weight: 700; line-height: 1.15; cursor: pointer; }
+  #term .macros button:hover { background: #5a5a62; }
+  #term .macros small { font-size: 0.72em; font-weight: 400; color: #c9c9cf; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #term .macros button.cue { background: #1565c0; box-shadow: inset 0 0 0 2px #90caf9; }
+  #term-form { display: flex; gap: 6px; padding: 2px 6px 6px; }
+  #term-in { flex: 1; min-width: 0; padding: 7px 10px; border: 0; border-bottom: 2px solid #8a8a92; border-radius: 6px 6px 0 0;
+    background: #3a3a40; color: #fff; font: inherit; }
+  #term-in:focus { outline: none; border-bottom-color: #7cc4ff; }
+  #term-form button { display: grid; place-items: center; width: 44px; border: 0; border-radius: 6px; background: #5a5a62; color: #fff; cursor: pointer; }
+  /* the log guide (i button) covers the log, macros and input until it is closed */
+  #term > * { grid-column: 1; }
+  #term > header { grid-row: 1; }
+  #term-log { grid-row: 2; }
+  #term .macros { grid-row: 3; }
+  #term-form { grid-row: 4; }
+  #term-info { display: grid; place-items: center; padding: 3px 5px; }
+  #term-info[aria-expanded="true"] { background: #fff; color: #1565c0; }
+  #term-help { grid-row: 2 / 5; z-index: 1; overflow-y: auto; overscroll-behavior: contain; padding: 10px 12px 14px;
+    background: #2b2b2e; color: #e4e4ea; font-size: 0.92em; line-height: 1.55; }
+  #term-help .help-top { display: flex; align-items: center; justify-content: space-between; }
+  #term-help .help-top b { font-size: 1.1em; color: #fff; }
+  #term-help .help-top button { border: 0; background: transparent; color: #c9c9cf; font: inherit; font-size: 1.5em; line-height: 1; cursor: pointer; }
+  #term-help p, #term-help ul { margin: 6px 0; }
+  #term-help ul { padding-left: 1.2em; }
+  #term-help h3 { margin: 12px 0 2px; font-size: 1em; color: #fff; }
+  #term-help .ex { padding: 6px 8px; border-radius: 6px; background: #1f1f23; font-family: Consolas, 'D2Coding', ui-monospace, monospace; word-break: break-all; }
+  #term-help .ts { margin-right: 0.6em; color: #cfcfd4; }
+  #term-help .g { color: #3ddc4f; }
+  #term-help .b { color: #7cc4ff; }
+  #term-help .s { color: #9aa0a6; }
+  #term-help table { width: 100%; border-collapse: collapse; }
+  #term-help th, #term-help td { padding: 4px 5px; border-bottom: 1px solid #3d3d44; text-align: left; vertical-align: top; }
+  #term-help th { color: #a8acb4; font-weight: 600; white-space: nowrap; }
+  #term-help td:nth-child(2), #term-help td:nth-child(3), #term-help code { font-family: Consolas, 'D2Coding', ui-monospace, monospace; color: #3ddc4f; }
+  #term-help .note { color: #9aa0a6; font-size: 0.92em; }
+  #sim-ui #tabs { display: none; }
+  /* the 3, 2, 1 of the start countdown: start lamps over a big outlined white numeral; colour only in the lamps */
+  .countdown { left: 50%; top: 38%; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: calc(10px * var(--hu));
+    width: max(200px, calc(440px * var(--hu))); }
+  @media (min-aspect-ratio: 801/1000) { .countdown { left: 40%; } }   /* the middle of the picture, which sits left of the terminal */
+  .countdown .lamps { display: flex; gap: calc(14px * var(--hu)); padding: calc(10px * var(--hu)) calc(16px * var(--hu)); border-radius: 999px; background: #1c1d21; }
+  .countdown .lamps i { width: max(14px, calc(36px * var(--hu))); aspect-ratio: 1; border-radius: 50%; background: #3b3d43; }
+  .countdown .lamps i.on { background: #e0402f; }
+  .countdown[data-step="go"] .lamps i { background: #2fb35a; }
+  .countdown .num { width: 100%; height: auto; overflow: visible; filter: drop-shadow(0 calc(6px * var(--hu)) 0 rgba(18, 18, 22, 0.2)); }
+  .countdown text { font: italic 900 210px 'Segoe UI', 'Malgun Gothic', sans-serif; fill: #fff; stroke: #121216; stroke-width: 14px; stroke-linejoin: round; paint-order: stroke fill; }
+  .countdown[data-step="go"] text { font-size: 132px; font-weight: 800; }
+  .countdown .num.pop { animation: count-pop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.25) both; }
+  .countdown[data-step="go"] .num.pop { animation: count-pop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.25) both, count-out 0.35s 0.55s ease-in forwards; }
+  @keyframes count-pop { from { opacity: 0; transform: scale(1.9); } }
+  @keyframes count-out { to { opacity: 0; transform: scale(1.2); } }
+  @media (prefers-reduced-motion: reduce) { .countdown .num.pop { animation: none !important; } }
+
+  /* a tall phone: the graph or the terminal spans the width above the buttons (tabs pick one), the note sits on top */
+  @media (max-aspect-ratio: 4/5) {
+    /* --dock: from the bottom of the screen to just above the button bar (measured in the script; no bar on the tip-over screen) */
+    :root { --dock: calc(108px + env(safe-area-inset-bottom, 0px)); }
+    body.tip { --dock: calc(12px + env(safe-area-inset-bottom, 0px)); }
+    #graph { left: 12px; right: 12px; width: auto; bottom: var(--dock); }
+    #term { left: 12px; right: 12px; width: auto; top: auto; height: min(300px, 40vh); bottom: var(--dock); font-size: 11px; }
+    #term header { padding: 6px 6px 6px 10px; }
+    body.show-graph #term, body:not(.show-graph) #graph { display: none; }
+    #sim-ui #tabs { display: flex; }
+    #foot { left: 14px; bottom: calc(var(--dock) + 8px + (100vw - 24px) * 0.577); font-size: 10px; }
+    body:not(.show-graph) #foot, #tip-foot { left: 14px; bottom: calc(var(--dock) + 8px + min(300px, 40vh)); font-size: 10px; }
+    #lower { bottom: calc(var(--dock) + 12px); }
+    body.tip #term { height: min(240px, 30vh); }      /* no graph tab here: a shorter terminal leaves room for the cars */
+    /* the two roll readouts become one panel across the top, under the back button: OFF | ON */
+    #tip-gauges { display: grid; grid-template-columns: 1fr 1fr; left: 12px; right: 12px; top: 56px; overflow: hidden;
+      border-radius: 10px; background: var(--card); box-shadow: var(--edge); }
+    #tip-ui .ttag { position: static; display: block; transform: none !important; }
+    .ttag .box { width: auto; gap: 3px; padding: 8px 12px 12px; border-radius: 0; background: none; box-shadow: none; }
+    #tip-ON .box { border-left: 1px solid var(--line); }
+    .ttag .top { gap: 6px; font-size: 12px; }
+    .ttag .state { font-size: 10px; line-height: 1.3; }
+    .ttag .gauge { height: 3px; }
+    #tip-burst { width: 130px; }
+    #tip-burst b { font-size: 14px; }
+    #drag-hint { gap: 8px; padding: 6px 12px 6px 8px; font-size: 12px; }
+    #drag-hint svg { width: 36px; height: 34px; }
+    #drag-hint { grid-template-columns: auto minmax(0, 1fr); width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box; white-space: normal; }
+    body.tip #tip-foot { bottom: calc(var(--dock) + 8px + min(240px, 30vh)); }
+    #tip-lower { left: 12px; right: 12px; bottom: calc(var(--dock) + 28px + min(240px, 30vh)); }
+    /* a folded terminal is just its title bar at the bottom: the notes above it come down with it */
+    #term.folded { height: auto !important; }
+    body.term-folded:not(.show-graph) #foot, body.term-folded #tip-foot { bottom: calc(var(--dock) + 54px); }
+    body.term-folded #tip-lower { bottom: calc(var(--dock) + 74px); }
+    #tip-lower { padding: 7px 10px; gap: 2px; border-radius: 8px; }
+    #tip-lower b { font-size: min(12.5px, 3.4vw); }
+    #tip-lower span { font-size: min(11px, 3vw); }
+    #lower { padding: 7px 10px; border-radius: 8px; }
+    #sim-stats { display: none; }
+    #sim-ui #bar { left: 12px; right: 12px; max-width: none; transform: none; gap: 2px 4px; font-size: 11.5px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+    #sim-ui #bar button { padding: 5px 8px; white-space: nowrap; }
+    #drag-hint.sim { top: 34%; }
+  }
+  /* the buttons under a simulation: one bar, its groups split by thin rules */
+  #bar { position: fixed; left: 50%; bottom: max(10px, calc(24px * var(--u))); transform: translateX(-50%); display: flex; flex-wrap: wrap;
+    justify-content: center; align-items: center; gap: 4px 6px; max-width: calc(100% - 24px); box-sizing: border-box; padding: 4px;
+    border-radius: 10px; background: var(--card); box-shadow: var(--edge); font-size: 13px; transition: opacity 0.3s; pointer-events: auto; }
+  #bar.idle { opacity: 0; pointer-events: none; }
+  #bar .group { display: flex; gap: 2px; align-items: center; }
+  @media (min-aspect-ratio: 801/1000) { #bar .group:not([hidden]) ~ .group:not([hidden]) { padding-left: 6px; border-left: 1px solid var(--line); } }
+  #bar button { padding: 6px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--ink); font: inherit; cursor: pointer; }
+  #bar button:hover { background: #ececee; }
+  #bar button.on { background: var(--ink); color: #fff; }
+  #bar .label { padding: 0 4px 0 6px; color: var(--gray); }
+  #sim-stats { position: fixed; right: calc(48px * var(--u)); bottom: calc(28px * var(--u)); color: var(--foot); font-size: max(11px, calc(16px * var(--u)));
+    font-variant-numeric: tabular-nums; }
+
+  /* ---------------- curtain between the two scenes, and while loading ---------------- */
+  #curtain { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--stage);
+    opacity: 0; visibility: hidden; transition: opacity 0.25s, visibility 0s 0.25s; }
+  #curtain.on { opacity: 1; visibility: visible; transition: opacity 0.25s; }
+  #curtain p { margin: 0; padding: 0 24px; max-width: 34em; font-size: 15px; line-height: 1.7; text-align: center; white-space: pre-line; color: var(--muted); }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.webgpu.js",
+    "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.webgpu.js",
+    "three/tsl": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.tsl.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+    "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.9.1/build/index.module.js",
+    "three-bvh-csg": "https://cdn.jsdelivr.net/npm/three-bvh-csg@0.0.17/build/index.module.js"
+  }
+}
+</script>
+</head>
+<body>
+<div id="app"></div>
+
+<!-- main menu -->
+<main id="menu" class="screen off">
+  <div class="stack">
+    <div class="head">
+      <p class="kicker" style="--i: 0">공학설계입문 5조 중간발표</p>
+      <h1 style="--i: 1">Slope Guard</h1>
+      <p class="tagline" style="--i: 2">상황 적응형 속도 제어기 (개인형 이동수단)</p>
+    </div>
+    <nav class="entries" aria-label="메뉴">
+      <button class="entry" data-go="model" style="--i: 3">
+        <span class="no">01</span>
+        <span><b>설계도</b></span>
+        <span class="go" aria-hidden="true">→</span>
+      </button>
+      <button class="entry" data-go="sim" style="--i: 4">
+        <span class="no">02</span>
+        <span><b>경사 주행 시뮬레이션</b></span>
+        <span class="go" aria-hidden="true">→</span>
+      </button>
+      <button class="entry" data-go="tip" style="--i: 5">
+        <span class="no">03</span>
+        <span><b>전도 상황 시뮬레이션</b></span>
+        <span class="go" aria-hidden="true">→</span>
+      </button>
+    </nav>
+    <p class="hint" style="--i: 6"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 바로 열기<span class="sep"></span><kbd>Esc</kbd> 메뉴로</p>
+  </div>
+  <dl class="spec" style="--i: 7">
+    <div><dt>프레임</dt><dd>포맥스 5T 데크</dd></div>
+    <div><dt>구동</dt><dd>TT모터 2개, L298N</dd></div>
+    <div><dt>센서</dt><dd>MPU6050, FC-03 2개</dd></div>
+    <div><dt>제어, 전원</dt><dd>ESP32, 18650 2구</dd></div>
+    <div><dt>무게추</dt><dd>M12 너트 4개, 원판 6개</dd></div>
+  </dl>
+</main>
+
+<!-- blueprint viewer -->
+<aside id="model-ui" class="screen off">
+  <div class="top">
+    <button class="btn back" data-go="menu">← 메뉴</button><h2>설계도</h2>
+    <button class="btn more" id="more" type="button" aria-expanded="false" aria-controls="model-extra">더보기</button>
+  </div>
+  <div class="label">시점</div>
+  <div class="grid2" id="views"></div>
+  <div class="seg" id="assembly" role="group" aria-label="조립과 분해">
+    <button class="btn on" type="button" data-asm="0">조립</button>
+    <button class="btn" type="button" data-asm="1">분해</button>
+  </div>
+  <button class="btn tour" id="tour" type="button">▶ 자동 둘러보기</button>
+  <div class="extra" id="model-extra">
+    <details class="bom-box" open>
+      <summary>부품표 <span id="bom-count"></span></summary>
+      <ol id="bom"></ol>
+    </details>
+    <div class="label">보기</div>
+    <label class="check"><input id="dims" type="checkbox" checked> 치수선 (mm)</label>
+    <label class="check"><input id="wires" type="checkbox" checked> 배선 (조립 상태에서)</label>
+    <div class="label">내보내기</div>
+    <div class="row">
+      <button class="btn" data-export="glb">GLB</button>
+      <button class="btn" data-export="stl">STL</button>
+      <button class="btn" data-export="png">사진 1920</button>
+    </div>
+    <p id="model-stats"></p>
+    <p id="model-status"></p>
+  </div>
+</aside>
+
+<div id="part-card" hidden>
+  <span class="no"></span>
+  <div><b></b><span class="sub"></span><p class="role"></p></div>
+  <button class="x" type="button" aria-label="카드 닫기">×</button>
+</div>
+<div id="dim-labels" aria-hidden="true"></div>
+<div id="drag-hint" aria-hidden="true">
+  <!-- a pointing hand (index finger on the left, the other fingers folded to its right, thumb below),
+       sliding left and right under an arrow that bends both ways: "drag to turn" -->
+  <svg viewBox="0 0 56 52">
+    <!-- one curved arrow with a head at each end; each head lies along the curve where it meets it -->
+    <g stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+      <path fill="none" d="M12 12.6 Q28 1 44 12.6" />
+      <path fill="currentColor" d="M7.2 16.2 L15.4 14.5 L10.8 8.6 Z M48.8 16.2 L40.6 14.5 L45.2 8.6 Z" />
+    </g>
+    <g class="hand">
+      <path fill="#fff" stroke="currentColor" stroke-width="2" stroke-linejoin="round"
+        d="M21 31 V19.8 a2.6 2.6 0 0 1 5.2 0 V28.5 a2.5 2.5 0 0 1 5 0 V29.8 a2.5 2.5 0 0 1 5 0 V31.2 a2.4 2.4 0 0 1 4.8 0 V39
+           c0 5.6 -3.8 9.5 -9.6 9.5 H27.6 c-3.4 0 -5.6 -1.6 -7.4 -4.2 L14.9 36.6 a2.5 2.5 0 0 1 3.9 -3.1 Z" />
+      <path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M26.2 28.5 V33 M31.2 28.5 V33.5 M36.2 29.8 V34.5" />
+    </g>
+  </svg>
+  <span></span>
+</div>
+
+<!-- slope simulation -->
+<section id="sim-ui" class="screen off">
+  <!-- the dotted line from the car the terminal is connected to, up to the terminal -->
+  <svg class="hud" id="link" aria-hidden="true"><path d="" /></svg>
+  <div class="hud tag" id="tag-OFF"><div class="box"><div class="chip" style="background: var(--dark)">제어 OFF</div><span class="v">0.00</span><span class="unit">m/s</span><span class="bt" title="터미널과 블루투스로 연결됨"><svg viewBox="0 0 24 24"><path d="M7 7l10 10-5 5V2l5 5L7 17" /></svg></span></div><div class="chip brake">제동</div></div>
+  <div class="hud tag" id="tag-ON"><div class="box"><div class="chip" style="background: var(--green)">제어 ON</div><span class="v">0.00</span><span class="unit">m/s</span><span class="bt" title="터미널과 블루투스로 연결됨"><svg viewBox="0 0 24 24"><path d="M7 7l10 10-5 5V2l5 5L7 17" /></svg></span></div><div class="chip brake">제동</div></div>
+  <div class="hud card" id="graph"><canvas></canvas></div>
+  <div class="hud" id="foot">시뮬레이션, 제어 수식 기반 예상값 (실측 아님)</div>
+  <div class="hud" id="lower"><b></b><span></span></div>
+  <div class="hud" id="count" hidden></div>
+  <div id="bar">
+    <div class="group" id="playback">
+      <button id="play">일시정지</button>
+      <button id="skip">소개 건너뛰기</button>
+    </div>
+    <div class="group" id="angles"><span class="label">경사</span></div>
+    <div class="group" id="tabs">
+      <button type="button" data-tab="term" class="on">터미널</button>
+      <button type="button" data-tab="graph">그래프</button>
+    </div>
+  </div>
+  <div id="sim-stats"></div>
+</section>
+
+<!-- tip-over test: both cars drive straight, the right rear wheel runs up a wedge and they fall onto their left side -->
+<section id="tip-ui" class="screen off">
+  <!-- the two roll readouts follow their cars on a wide screen; on a phone they sit side by side in one panel at the top -->
+  <div class="hud" id="tip-gauges">
+      <div class="hud tag ttag" id="tip-OFF"><div class="box">
+        <div class="top"><span class="who">제어 OFF</span><span class="val">좌우각 <b class="deg">0°</b></span></div>
+        <div class="gauge"><i class="fill"></i><i class="mark"></i></div>
+        <span class="state">출발 대기</span>
+      </div></div>
+      <div class="hud tag ttag below" id="tip-ON"><div class="box">
+        <div class="top"><span class="who">제어 ON</span><span class="val">좌우각 <b class="deg">0°</b></span></div>
+        <div class="gauge"><i class="fill"></i><i class="mark"></i></div>
+        <span class="state">출발 대기</span>
+      </div></div>
+  </div>
+  <svg class="hud" id="tip-link" aria-hidden="true"><path d="" /></svg>
+  <div class="hud" id="tip-foot">시뮬레이션, 넘어지는 움직임은 단순화한 계산 (실측 아님)</div>
+  <div class="hud" id="tip-burst" hidden><div class="burst">
+    <svg viewBox="0 0 240 150" aria-hidden="true"><polygon points="" /></svg>
+    <p><b>2차 사고 위험!</b></p>
+  </div></div>
+  <div class="hud" id="tip-lower"><b>제어 ON: 50° 넘으면 0.1초 뒤 출력 차단</b><span>제어 OFF: 넘어져도 바퀴가 돌아 앞으로 밀려감</span></div>
+  <div class="hud" id="tip-count" hidden></div>
+</section>
+
+<!-- back to the menu from either simulation, top left -->
+<button id="back" type="button" data-go="menu">← 메뉴</button>
+
+<!-- Bluetooth terminal, shared by the slope run and the tip-over test -->
+<section id="term" class="screen off" aria-label="블루투스 시리얼 터미널">
+  <header>
+    <b>터미널</b>
+    <span class="dev"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M7 7l10 10-5 5V2l5 5L7 17" /></svg>SlopeGuard_5</span>
+    <button id="term-sw" type="button" title="계기판 슬라이드 스위치 (주행을 시작할 때 읽어요)">스위치 ON</button>
+    <button id="term-info" type="button" aria-label="로그 읽는 법" title="로그 읽는 법" aria-expanded="false" aria-controls="term-help">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2" /><path d="M12 11v6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" /><circle cx="12" cy="7.6" r="1.3" fill="currentColor" /></svg>
+    </button>
+    <button id="term-clear" type="button" aria-label="로그 지우기" title="로그 지우기">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2zm-3 6h12l-1 12H7L6 9z" /></svg>
+    </button>
+    <button id="term-fold" type="button" aria-label="터미널 접기" title="터미널 접기" aria-expanded="true">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+    </button>
+  </header>
+  <div id="term-log" role="log"></div>
+  <div id="term-help" hidden>
+    <div class="help-top"><b>로그 보는 법</b><button type="button" id="term-help-close" aria-label="설명 닫기">×</button></div>
+    <p class="ex"><span class="ts">16:08:22.671</span><span class="g">1780,ON,4.1,-0.4,0.322,0.295,3,B,0.1,0.0</span></p>
+    <p>앞 시각은 앱이 받은 시각. 초록 부분이 차가 20ms마다 보내는 값이다.</p>
+    <table>
+      <thead><tr><th>칸</th><th>이름</th><th>예시</th><th>뜻</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>t_ms</td><td>1780</td><td>출발 후 시간 (ms)</td></tr>
+        <tr><td>2</td><td>mode</td><td>ON</td><td>제어 ON/OFF (출발할 때 스위치)</td></tr>
+        <tr><td>3</td><td>slope</td><td>4.1</td><td>경사각 (°), 내리막 +</td></tr>
+        <tr><td>4</td><td>roll</td><td>-0.4</td><td>좌우 기울기 (°)</td></tr>
+        <tr><td>5</td><td>speed</td><td>0.322</td><td>속도 (m/s), 좌우 엔코더 평균</td></tr>
+        <tr><td>6</td><td>target</td><td>0.295</td><td>목표 속도 (m/s), 0.32 − 0.006 × 경사각</td></tr>
+        <tr><td>7</td><td>pwm</td><td>3</td><td>출력 0~255 (D면 스로틀, B면 제동 세기)</td></tr>
+        <tr><td>8</td><td>state</td><td>B</td><td>D 스로틀 / C 출력 끊음 / B 제동</td></tr>
+        <tr><td>9</td><td>yaw</td><td>0.1</td><td>회전 각속도 (°/s), 오른쪽 +</td></tr>
+        <tr><td>10</td><td>heading</td><td>0.0</td><td>누적 회전각 (°), 오른쪽 +</td></tr>
+      </tbody>
+    </table>
+    <h3>state</h3>
+    <ul>
+      <li><b>B</b> 목표보다 0.03 m/s 넘게 빠름. 제동 PWM = 600 × 초과 속도 + 쌓인 값, 20ms에 최대 25씩 증가</li>
+      <li><b>C</b> 목표 ±0.03 안. 쌓인 제동이 남아 있으면 B 유지</li>
+      <li><b>D</b> 목표보다 느림. 스로틀 190</li>
+    </ul>
+    <h3>글자 색</h3>
+    <ul><li><span class="g">초록</span> 차에서 온 줄</li><li><span class="b">파랑</span> 보낸 명령</li><li><span class="s">회색</span> 앱 메시지</li></ul>
+    <h3>명령</h3>
+    <ul>
+      <li><code>s</code> 경사로 주행 (부저 3번 뒤 출발)</li>
+      <li><code>x</code> 정지</li>
+      <li><code>c</code> 자이로 영점 (평평한 곳에 두고)</li>
+      <li><code>i</code> IMU 점검</li>
+      <li><code>l</code> <code>r</code> 왼쪽 / 오른쪽 바퀴만 2초 (바퀴 띄우고)</li>
+      <li><code>?</code> 상태, 명령 목록</li>
+      <li><code>f</code> 직진 주행 (시뮬레이션은 전도 시험 화면에서만)</li>
+      <li><code>t</code> 회전 주행 (실제 차만)</li>
+    </ul>
+    <h3>주행 끝</h3>
+    <p>멈춘 이유 한 줄(주행 거리 도달 1.6 m, 주행 시간 초과 8초, 수동 정지, 기울기 초과로 정지)과 요약 한 줄(코스, 모드, 최고 속도, 주행 거리, 회전각, IMU 버린 샘플 수).</p>
+    <p class="note">prj_test3.ino 기준. 시뮬레이션 값은 계산값 (실측 아님).</p>
+  </div>
+  <div class="macros">
+    <button type="button" data-cmd="s">M1<small>s 경사로</small></button>
+    <button type="button" data-cmd="x">M2<small>x 정지</small></button>
+    <button type="button" data-cmd="c">M3<small>c 영점</small></button>
+    <button type="button" data-cmd="i">M4<small>i 점검</small></button>
+    <button type="button" data-cmd="?">M5<small>? 상태</small></button>
+  </div>
+  <form id="term-form" autocomplete="off">
+    <input id="term-in" type="text" enterkeyhint="send" placeholder="명령 보내기 (s, x, c, i, l, r, ?)" aria-label="보낼 명령">
+    <button type="submit" aria-label="보내기">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M3 20l18-8L3 4v6l12 2-12 2z" /></svg>
+    </button>
+  </form>
+</section>
+
+<div id="curtain" class="on"><p>모형을 만드는 중</p></div>
+
+<script>
+// If the model never finishes loading, say why on the curtain instead of waiting forever.
+// The module below clears this text once everything is drawn.
+(() => {
+  const p = document.querySelector('#curtain p');
+  const first = p.textContent;
+  const say = (msg) => { if (p.textContent) p.textContent = msg; };   // empty text means loading already finished
+  if (location.protocol === 'file:') {
+    say('파일을 바로 열면 모형을 불러올 수 없어요.\nthreejs 폴더의 열기.bat을 더블클릭해서 열어 주세요.');
+    return;
+  }
+  const fail = () => say('모형을 불러오지 못했어요.\n인터넷 연결을 확인한 뒤 새로고침해 주세요.');
+  window.addEventListener('error', fail, true);       // capture: a failed script load does not bubble
+  window.addEventListener('unhandledrejection', fail);
+  setTimeout(() => { if (p.textContent === first) say('불러오는 데 시간이 오래 걸리고 있어요.\n인터넷 연결을 확인하고, 계속 이 화면이면 새로고침해 주세요.'); }, 20000);
+})();
+</script>
+
+<script type="module">
+import * as THREE from 'three/webgpu';
+import { createBlueprint } from './app/blueprint.js';
+import { createSim } from './app/sim.js';
+import { createTip } from './app/tip.js';
+import { createTerminal } from './app/terminal.js';
+
+const $ = (id) => document.getElementById(id);
+const app = $('app');
+
+// ------------------------------------------------------------
+// One renderer for both scenes: WebGPU, falls back to WebGL 2 by itself
+// ------------------------------------------------------------
+const renderer = new THREE.WebGPURenderer({ antialias: true });
+await renderer.init();
+const backend = renderer.backend.isWebGPUBackend ? 'WebGPU' : 'WebGL 2';
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.NoToneMapping;          // Blender view transform 'Standard'
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+app.appendChild(renderer.domElement);
+
+// ------------------------------------------------------------
+// "Drag me" hint: a swaying hand over the model, until the first drag on that screen
+// ------------------------------------------------------------
+const hint = (() => {
+  const el = $('drag-hint'), text = el.querySelector('span');
+  const touch = matchMedia('(pointer: coarse)').matches;
+  const TEXT = {
+    model: touch ? '손가락으로 돌리고, 부품을 눌러 보세요' : '드래그해서 돌리고, 부품에 마우스를 올려 보세요',
+    sim: touch ? '차가 서 있는 동안 손가락으로 둘러볼 수 있어요' : '차가 서 있는 동안 드래그해서 둘러볼 수 있어요',
+    tip: touch ? '출발 전과 끝난 뒤에 손가락으로 둘러볼 수 있어요' : '출발 전과 끝난 뒤에 드래그해서 둘러볼 수 있어요',
+  };
+  const seen = new Set();
+  let timer = 0;
+  const hide = () => { clearTimeout(timer); el.classList.remove('on'); };
+  // shown for 7 s at most; it comes back on the next visit until the viewer has dragged once
+  function show(kind, delay = 700) {
+    if (seen.has(kind)) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (mode !== kind) return;
+      text.textContent = TEXT[kind];
+      el.classList.toggle('sim', kind !== 'model');
+      el.classList.add('on');
+      timer = setTimeout(hide, 7000);
+    }, delay);
+  }
+  const used = () => { seen.add(mode); hide(); };
+  renderer.domElement.addEventListener('pointerdown', used);
+  renderer.domElement.addEventListener('wheel', used, { passive: true });
+  for (const id of ['bar', 'model-ui', 'term']) $(id).addEventListener('click', hide);
+  return { show, hide };
+})();
+
+// on a tall phone the terminal and the graph share the space under the cars; two tabs pick one
+function showTab(which) {
+  document.body.classList.toggle('show-graph', which === 'graph');
+  document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === which));
+  resize();                                            // the graph canvas follows its box
+}
+document.querySelectorAll('#tabs button').forEach((b) => { b.onclick = () => showTab(b.dataset.tab); });
+
+const bp = createBlueprint({ renderer, backend, restoreSize: resize });
+const term = createTerminal({ onCommand: (c) => (mode === 'tip' ? tip : sim).command(c) });
+const sim = createSim({
+  renderer, backend, term,
+  onReady: () => { showTab('term'); hint.show('sim', 300); },   // waiting for 's': the terminal comes to the front
+  onStop: () => hint.show('sim', 400),
+});
+// the drag hint shows while the cars wait at the start, and goes away when they start (it would cover the fall)
+const tip = createTip({ renderer, term, onStart: () => hint.hide() });
+
+// high quality drawing (ambient occlusion on a multisampled pass): on for computers with WebGPU,
+// off for phones and for the WebGL 2 fallback (that path would lose its edge smoothing), switchable
+const hq = backend === 'WebGPU' && !matchMedia('(pointer: coarse)').matches && Math.min(innerWidth, innerHeight) > 500;
+bp.setHQ(hq);
+sim.setHQ(hq);
+tip.setHQ(hq);
+
+// on a phone the panel shows only the camera stops until 더보기 is pressed
+// on a phone the camera stops are one row that scrolls sideways; a mouse wheel scrolls it too
+$('views').addEventListener('wheel', (e) => {
+  const v = e.currentTarget;
+  if (v.scrollWidth <= v.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+  v.scrollLeft += e.deltaY;
+  e.preventDefault();
+}, { passive: false });
+
+$('more').onclick = () => {
+  const open = $('model-ui').classList.toggle('open');
+  $('more').setAttribute('aria-expanded', open);
+  $('more').textContent = open ? '접기' : '더보기';
+};
+
+function resize() {
+  const w = app.clientWidth, h = app.clientHeight;
+  renderer.setSize(w, h, false);
+  const unit = Math.min(w / 1920, h / 1080), hud = Math.max(unit, 0.42);
+  document.documentElement.style.setProperty('--u', unit);
+  document.documentElement.style.setProperty('--hu', hud);
+  bp.resize(w, h);
+  sim.resize(w, h, hud);
+  tip.resize(w, h);
+}
+resize();
+new ResizeObserver(resize).observe(app);
+
+// on a tall phone the terminal (or the graph) sits right on top of the button bar, one row or two
+const dock = () => {
+  const top = $('bar').getBoundingClientRect().top;
+  if (top > 0) document.documentElement.style.setProperty('--dock', `${Math.round(innerHeight - top + 8)}px`);
+};
+new ResizeObserver(dock).observe($('bar'));
+addEventListener('resize', dock);
+
+// ------------------------------------------------------------
+// Screens: 'menu' and 'model' share the blueprint scene, 'sim' has its own.
+// Going between the two scenes passes behind a short curtain.
+// The address keeps the screen (#model, #sim), so the browser's back button works.
+// ------------------------------------------------------------
+const screens = { menu: $('menu'), model: $('model-ui'), sim: $('sim-ui'), tip: $('tip-ui') };
+const runs = { sim, tip };                             // the two screens with their own scene and the terminal
+const curtain = $('curtain');
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+// wait for the next drawn frame, but never longer than 100 ms (a hidden tab draws no frames)
+const nextFrame = () => Promise.race([new Promise((r) => requestAnimationFrame(() => r())), wait(100)]);
+let mode = null, active = bp;
+
+async function apply(next) {
+  if (next === mode) return;
+  const prev = mode;
+  mode = next;
+  const sceneOf = (k) => (runs[k] ? k : 'bp');
+  const swap = prev !== null && sceneOf(prev) !== sceneOf(next);
+  hint.hide();
+  if (swap) { curtain.classList.add('on'); await wait(260); }
+  for (const [k, el] of Object.entries(screens)) el.classList.toggle('off', k !== next);
+  $('term').classList.toggle('off', !runs[next]);
+  document.body.classList.toggle('tip', next === 'tip');
+  document.body.classList.toggle('runs', !!runs[next]);   // the back button shows on both simulations
+  $('term-sw').hidden = next === 'tip';               // the terminal talks to the ON car only on the tip-over screen
+  if (next === 'model') hint.show('model');
+  if (runs[prev]) runs[prev].exit();
+  if (runs[next]) {
+    if (!runs[prev]) bp.exit();
+    active = runs[next];
+    if (next === 'tip') { showTab('term'); hint.show('tip', 1200); }
+    runs[next].enter();
+  } else {
+    active = bp;
+    bp.enter(next, prev === null || swap);
+  }
+  if (swap) { await nextFrame(); await nextFrame(); curtain.classList.remove('on'); }
+}
+let queue = Promise.resolve();
+const request = (next) => (queue = queue.then(() => apply(next)));
+const fromHash = () => ({ '#model': 'model', '#sim': 'sim', '#tip': 'tip' })[location.hash] ?? 'menu';
+function go(next) {
+  if (fromHash() !== next) history.pushState(null, '', next === 'menu' ? location.pathname + location.search : `#${next}`);
+  request(next);
+}
+window.addEventListener('popstate', () => request(fromHash()));
+window.addEventListener('hashchange', () => request(fromHash()));
+document.querySelectorAll('[data-go]').forEach((b) => { b.onclick = () => go(b.dataset.go); });
+const KEYS = { 1: 'model', 2: 'sim', 3: 'tip' };
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && mode !== 'menu') go('menu');
+  else if (mode === 'menu' && KEYS[e.key]) go(KEYS[e.key]);
+});
+
+// ------------------------------------------------------------
+// Start: open the screen in the address, then lift the curtain
+// ------------------------------------------------------------
+let last = performance.now();
+await request(fromHash());
+renderer.setAnimationLoop(() => {
+  const now = performance.now(), dt = Math.min((now - last) / 1000, 0.1);
+  last = now;
+  active.frame(now, dt);
+});
+for (let i = 0; i < 3; i++) await nextFrame();
+if (mode === 'menu') $('menu').classList.add('intro');
+curtain.classList.remove('on');
+curtain.querySelector('p').textContent = '';
+
+window.slope = { go, bp, sim, tip, renderer };
+</script>
+</body>
+</html>
