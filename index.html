@@ -193,12 +193,17 @@
   .tag.braking .brake { opacity: 1; }
   #graph { right: calc(48px * var(--hu)); bottom: calc(60px * var(--hu)); width: calc(572px * var(--hu)); aspect-ratio: 572 / 330; }
   #graph canvas { width: 100%; height: 100%; display: block; }
-  #lower, #tip-lower, #turn-lower { left: calc(44px * var(--hu)); bottom: calc(40px * var(--hu)); display: grid; justify-items: start; gap: calc(6px * var(--hu));
+  #lower, #tip-lower { left: calc(44px * var(--hu)); bottom: calc(40px * var(--hu)); display: grid; justify-items: start; gap: calc(6px * var(--hu));
     padding: calc(16px * var(--hu)) calc(24px * var(--hu)); border-radius: calc(12px * var(--hu)); background: var(--card); box-shadow: var(--edge); opacity: 0; }
-  #lower b, #tip-lower b, #turn-lower b { font-size: calc(38px * var(--hu)); letter-spacing: -0.01em; }
-  #lower span, #tip-lower span, #turn-lower span { font-size: calc(26px * var(--hu)); color: var(--dark); }
-  #tip-lower, #turn-lower { bottom: calc(80px * var(--hu)); transition: opacity 0.4s; }
-  #tip-lower b, #tip-lower span, #turn-lower b, #turn-lower span { white-space: nowrap; }
+  #lower b, #tip-lower b { font-size: calc(38px * var(--hu)); letter-spacing: -0.01em; }
+  #lower span, #tip-lower span { font-size: calc(26px * var(--hu)); color: var(--dark); }
+  #tip-lower { bottom: calc(80px * var(--hu)); transition: opacity 0.4s; }
+  /* one sentence, as a subtitle in a video: white on a dark band, centred under the picture */
+  .subline { left: 50%; bottom: calc(80px * var(--hu)); transform: translateX(-50%); padding: max(8px, calc(10px * var(--hu))) max(14px, calc(24px * var(--hu)));
+    border-radius: calc(8px * var(--hu)); background: rgba(18, 18, 22, 0.78); color: #fff; font-size: max(14px, calc(34px * var(--hu)));
+    font-weight: 600; white-space: nowrap; opacity: 0; transition: opacity 0.4s; }
+  @media (min-aspect-ratio: 801/1000) { .subline { left: 40%; } }   /* the middle of the picture, left of the terminal */
+  #tip-lower b, #tip-lower span { white-space: nowrap; }
   /* the starburst over the OFF car: pops in once and stays still */
   #tip-burst { left: 0; top: 0; width: max(190px, calc(330px * var(--hu))); aspect-ratio: 240 / 150; will-change: transform; }
   #tip-burst .burst { position: relative; width: 100%; height: 100%; display: grid; place-items: center;
@@ -232,7 +237,7 @@
     display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto auto; overflow: hidden; border-radius: 12px; background: #2b2b2e; color: #ececf0;
     box-shadow: 0 2px 10px rgba(18, 18, 22, 0.16); font-size: max(12px, calc(17px * var(--hu))); pointer-events: auto; }
   #term header { display: flex; align-items: center; gap: 6px; padding: 8px 8px 8px 12px; background: #1565c0; color: #fff; }
-  @media (min-aspect-ratio: 801/1000) { body.nobar #term { bottom: calc(120px * var(--hu)); } }   /* no graph under it on the turn and tip-over screens */
+  @media (min-aspect-ratio: 801/1000) { body.nograph #term { bottom: calc(120px * var(--hu)); } }   /* no graph under it on the turn and tip-over screens */
   #term header b { font-size: 1.1em; }
   /* the device name gives way first when the bar is narrow; the buttons stay at the right end */
   #term header .dev { display: inline-flex; align-items: center; gap: 2px; min-width: 0; margin-right: auto; overflow: hidden; white-space: nowrap; font-size: 0.85em; opacity: 0.85; }
@@ -335,7 +340,7 @@
     #foot { left: 14px; bottom: calc(var(--dock) + 8px + (100vw - 24px) * 0.577); font-size: 10px; }
     body:not(.show-graph) #foot, #tip-foot, #turn-foot { left: 14px; bottom: calc(var(--dock) + 8px + min(300px, 40vh)); font-size: 10px; }
     #lower { bottom: calc(var(--dock) + 12px); }
-    body.nobar #term { height: min(240px, 30vh); }      /* no graph tab here: a shorter terminal leaves room for the cars */
+    body.nograph #term { height: min(240px, 30vh); }      /* no graph tab here: a shorter terminal leaves room for the cars */
     /* the two roll readouts become one panel across the top, under the back button: OFF | ON */
     #tip-gauges, #turn-gauges { display: grid; grid-template-columns: 1fr 1fr; left: 12px; right: 12px; top: 56px; overflow: hidden;
       border-radius: 10px; background: var(--card); box-shadow: var(--edge); }
@@ -350,32 +355,33 @@
     #drag-hint { gap: 8px; padding: 6px 12px 6px 8px; font-size: 12px; }
     #drag-hint svg { width: 36px; height: 34px; }
     #drag-hint { grid-template-columns: auto minmax(0, 1fr); width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box; white-space: normal; }
-    body.nobar #tip-foot, body.nobar #turn-foot { bottom: calc(var(--dock) + 8px + min(240px, 30vh)); }
-    #tip-lower, #turn-lower { left: 12px; right: 12px; bottom: calc(var(--dock) + 28px + min(240px, 30vh)); }
+    body.nograph #tip-foot, body.nograph #turn-foot { bottom: calc(var(--dock) + 8px + min(240px, 30vh)); }
+    #tip-lower { left: 12px; right: 12px; bottom: calc(var(--dock) + 28px + min(240px, 30vh)); }
+    .subline { bottom: calc(var(--dock) + 28px + min(240px, 30vh)); padding: 8px 12px; border-radius: 6px; font-size: min(12.5px, 3.3vw); }
     /* a folded terminal is just its title bar at the bottom: the notes above it come down with it */
     #term.folded { height: auto !important; }
     body.term-folded:not(.show-graph) #foot, body.term-folded #tip-foot, body.term-folded #turn-foot { bottom: calc(var(--dock) + 54px); }
-    body.term-folded #tip-lower, body.term-folded #turn-lower { bottom: calc(var(--dock) + 74px); }
-    #tip-lower, #turn-lower { padding: 7px 10px; gap: 2px; border-radius: 8px; }
-    #tip-lower b, #turn-lower b { font-size: min(12.5px, 3.4vw); }
-    #tip-lower span, #turn-lower span { font-size: min(11px, 3vw); }
+    body.term-folded #tip-lower, body.term-folded .subline { bottom: calc(var(--dock) + 74px); }
+    #tip-lower { padding: 7px 10px; gap: 2px; border-radius: 8px; }
+    #tip-lower b { font-size: min(12.5px, 3.4vw); }
+    #tip-lower span { font-size: min(11px, 3vw); }
     #lower { padding: 7px 10px; border-radius: 8px; }
     #sim-stats { display: none; }
-    #sim-ui #bar { left: 12px; right: 12px; max-width: none; transform: none; gap: 2px 4px; font-size: 11.5px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
-    #sim-ui #bar button { padding: 5px 8px; white-space: nowrap; }
+    #sim-ui #bar, #turn-ui #turn-bar { left: 12px; right: 12px; max-width: none; transform: none; gap: 2px 4px; font-size: 11.5px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+    #sim-ui #bar button, #turn-ui #turn-bar button { padding: 5px 8px; white-space: nowrap; }
     #drag-hint.sim { top: 34%; }
   }
   /* the buttons under a simulation: one bar, its groups split by thin rules */
-  #bar { position: fixed; left: 50%; bottom: max(10px, calc(24px * var(--u))); transform: translateX(-50%); display: flex; flex-wrap: wrap;
+  #bar, #turn-bar { position: fixed; left: 50%; bottom: max(10px, calc(24px * var(--u))); transform: translateX(-50%); display: flex; flex-wrap: wrap;
     justify-content: center; align-items: center; gap: 4px 6px; max-width: calc(100% - 24px); box-sizing: border-box; padding: 4px;
     border-radius: 10px; background: var(--card); box-shadow: var(--edge); font-size: 13px; transition: opacity 0.3s; pointer-events: auto; }
   #bar.idle { opacity: 0; pointer-events: none; }
-  #bar .group { display: flex; gap: 2px; align-items: center; }
+  #bar .group, #turn-bar .group { display: flex; gap: 2px; align-items: center; }
   @media (min-aspect-ratio: 801/1000) { #bar .group:not([hidden]) ~ .group:not([hidden]) { padding-left: 6px; border-left: 1px solid var(--line); } }
-  #bar button { padding: 6px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--ink); font: inherit; cursor: pointer; }
-  #bar button:hover { background: #ececee; }
-  #bar button.on { background: var(--ink); color: #fff; }
-  #bar .label { padding: 0 4px 0 6px; color: var(--gray); }
+  #bar button, #turn-bar button { padding: 6px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--ink); font: inherit; cursor: pointer; }
+  #bar button:hover, #turn-bar button:hover { background: #ececee; }
+  #bar button.on, #turn-bar button.on { background: var(--ink); color: #fff; }
+  #bar .label, #turn-bar .label { padding: 0 4px 0 6px; color: var(--gray); }
   #sim-stats { position: fixed; right: calc(48px * var(--u)); bottom: calc(28px * var(--u)); color: var(--foot); font-size: max(11px, calc(16px * var(--u)));
     font-variant-numeric: tabular-nums; }
 
@@ -539,8 +545,11 @@
   </div>
   <svg class="hud" id="turn-link" aria-hidden="true"><path d="" /></svg>
   <div class="hud" id="turn-foot">시뮬레이션, 넘어지는 움직임은 단순화한 계산 (실측 아님)</div>
-  <div class="hud" id="turn-lower"><b>제어 ON: 빨리 돌수록 목표 속도를 낮춰 천천히 회전</b><span>제어 OFF: 최대 출력으로 돌다 멈추는 순간 넘어짐</span></div>
+  <div class="hud subline" id="turn-lower">회전 각속도를 실시간으로 감지해 회전 상황을 판단하고 감속</div>
   <div class="hud" id="turn-count" hidden></div>
+  <div id="turn-bar">
+    <div class="group"><span class="label">배속</span><button type="button" data-speed="0.25">0.25×</button><button type="button" data-speed="0.5">0.5×</button><button type="button" data-speed="0.75">0.75×</button><button type="button" data-speed="1" class="on">1×</button></div>
+  </div>
 </section>
 
 <!-- tip-over test: both cars drive straight, the right rear wheel runs up a wedge and they fall onto their left side -->
@@ -780,10 +789,12 @@ new ResizeObserver(resize).observe(app);
 
 // on a tall phone the terminal (or the graph) sits right on top of the button bar, one row or two
 const dock = () => {
-  const top = $('bar').getBoundingClientRect().top;
+  const top = $(mode === 'turn' ? 'turn-bar' : 'bar').getBoundingClientRect().top;
   if (top > 0) document.documentElement.style.setProperty('--dock', `${Math.round(innerHeight - top + 8)}px`);
 };
-new ResizeObserver(dock).observe($('bar'));
+const barWatch = new ResizeObserver(dock);
+barWatch.observe($('bar'));
+barWatch.observe($('turn-bar'));
 addEventListener('resize', dock);
 
 // ------------------------------------------------------------
@@ -809,7 +820,9 @@ async function apply(next) {
   if (swap) { curtain.classList.add('on'); await wait(260); }
   for (const [k, el] of Object.entries(screens)) el.classList.toggle('off', k !== next);
   $('term').classList.toggle('off', !runs[next]);
-  document.body.classList.toggle('nobar', next === 'tip' || next === 'turn');   // no button bar under these two
+  document.body.classList.toggle('nograph', next === 'tip' || next === 'turn');   // no graph tab on these two
+  document.body.classList.toggle('nobar', next === 'tip');                       // and no button bar under the tip-over test
+  dock();
   document.body.classList.toggle('runs', !!runs[next]);   // the back button shows on both simulations
   $('term-sw').hidden = next === 'tip' || next === 'turn';   // on these two the terminal talks to the ON car only
   if (next === 'model') hint.show('model');

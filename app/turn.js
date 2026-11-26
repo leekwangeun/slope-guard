@@ -182,6 +182,15 @@ export function createTurn({ renderer, term, onStart = () => {} }) {
     o.connect(g).connect(audio.destination);
     o.start(); o.stop(audio.currentTime + ms / 1000);
   };
+  // playback speed of the run, 0.25 to 1 (the countdown beeps stay in real time, like the buzzer)
+  let speed = 1;
+  const speedButtons = [...document.querySelectorAll('#turn-bar [data-speed]')];
+  for (const b of speedButtons) {
+    b.onclick = () => {
+      speed = Number(b.dataset.speed);
+      speedButtons.forEach((o) => o.classList.toggle('on', o === b));
+    };
+  }
   // the first macro button sends t (turn run) on this screen
   const cue = document.querySelector('#term [data-cmd="s"]'), cueLabel = cue?.querySelector('small');
   const count = createCountdown($('turn-count'));
@@ -283,7 +292,7 @@ export function createTurn({ renderer, term, onStart = () => {} }) {
         term.print('t_ms,mode,slope,roll,speed,target,pwm,state,yaw,heading');
       }
     } else if (phase === 'run' || phase === 'done') {
-      t += dt;
+      t += dt * speed;
       emit();
       if (phase === 'run' && t > T_DONE + 1.5) {
         phase = 'done';
@@ -292,6 +301,7 @@ export function createTurn({ renderer, term, onStart = () => {} }) {
       }
     }
     const tt = phase === 'ready' || phase === 'count' ? -1 : t;
+    const step = tt < 0 ? dt : dt * speed;              // the wheels turn at the playback speed too
     for (const [run, car] of Object.entries(CARS)) {
       const R = RUN[run], head = tt < 0 ? 0 : at(R.head, tt), v = tt < 0 ? 0 : at(R.v, tt);
       const yawRad = THREE.MathUtils.degToRad(head);
@@ -302,9 +312,9 @@ export function createTurn({ renderer, term, onStart = () => {} }) {
       car.roll.rotation.x = tt < 0 ? 0 : at(R.roll, tt);  // over onto its right side
       // left wheel forward, right wheel backward; the caster turns sideways and rolls round the circle
       const a = spinAngle[run];
-      a[0] += (v / WHEEL_R) * dt;
-      a[1] -= (v / WHEEL_R) * dt;
-      a[2] += (((2 * v) / TRACK) * CASTER_ARM / car.casterR) * dt;
+      a[0] += (v / WHEEL_R) * step;
+      a[1] -= (v / WHEEL_R) * step;
+      a[2] += (((2 * v) / TRACK) * CASTER_ARM / car.casterR) * step;
       car.wheels[0].rotation.z = -a[0];
       car.wheels[1].rotation.z = -a[1];
       car.wheels[2].rotation.set(0, tt < 0 ? 0 : -Math.PI / 2 * Math.min(1, head / 15), -a[2]);
