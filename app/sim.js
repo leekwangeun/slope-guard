@@ -803,7 +803,7 @@ export function createSim({ renderer, backend, term, onReady = () => {}, onStop 
     else if (c === 'i' && !running) imuCheck();
     else if ((c === 'l' || c === 'r') && !running) wheelTest(c === 'l');
     else if (c === '?') printStatus();
-    else if ((c === 'f' || c === 't') && !running) term.print('시뮬레이션에는 경사로 코스만 있어서 f, t는 실제 차에서만 해 볼 수 있어요', 'sys');
+    else if ((c === 'f' || c === 't') && !running) term.print('t는 03 회전 코스, f는 04 전도 상황 화면에서 해 볼 수 있어요', 'sys');
   }
 
   rebuild(10);

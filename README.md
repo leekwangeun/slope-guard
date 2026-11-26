@@ -5,6 +5,7 @@
 - 바로 보기: https://leekwangeun.github.io/slope-guard/
 - 설계도: https://leekwangeun.github.io/slope-guard/#model
 - 경사 주행 시뮬레이션: https://leekwangeun.github.io/slope-guard/#sim
+- 회전 코스 시뮬레이션: https://leekwangeun.github.io/slope-guard/#turn
 - 전도 상황 시뮬레이션: https://leekwangeun.github.io/slope-guard/#tip
 
 three.js(WebGPU, 안 되는 기기에서는 WebGL 2)로 그린다. 모형과 질감은 코드로 만들고, 시뮬레이션 값은 펌웨어 prj_test3.ino의 제어 수식으로 계산한 예상값이다(실측 아님).

@@ -171,14 +171,14 @@
 
   /* ---------------- simulation HUD (laid out on a 1920 x 1080 frame, like the video) ----------------
      --hu is the frame scale, but never so small that a phone cannot read it */
-  #sim-ui, #tip-ui { position: fixed; inset: 0; pointer-events: none; }
+  #sim-ui, #tip-ui, #turn-ui { position: fixed; inset: 0; pointer-events: none; }
   .hud { position: fixed; pointer-events: none; }
   .card { background: var(--card); border-radius: calc(10px * var(--hu)); box-shadow: var(--edge); }
   #back { position: fixed; z-index: 5; left: max(12px, calc(44px * var(--hu))); top: max(12px, calc(44px * var(--hu))); display: none;
     padding: 7px 12px; border: 0; border-radius: 8px; background: var(--card); box-shadow: var(--edge); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
   #back:hover { background: var(--paper); box-shadow: 0 0 0 1.5px var(--ink); }
   body.runs #back { display: block; }
-  #foot, #tip-foot { left: calc(44px * var(--hu)); bottom: calc(28px * var(--hu)); font-size: calc(20px * var(--hu)); color: var(--foot); }
+  #foot, #tip-foot, #turn-foot { left: calc(44px * var(--hu)); bottom: calc(28px * var(--hu)); font-size: calc(20px * var(--hu)); color: var(--foot); }
   .tag { left: 0; top: 0; display: flex; align-items: center; gap: calc(6px * var(--hu)); will-change: transform; }
   .tag .box { position: relative; display: flex; align-items: center; width: calc(232px * var(--hu)); height: calc(50px * var(--hu));
     box-sizing: border-box; padding: 0 calc(10px * var(--hu)) 0 calc(8px * var(--hu)); background: var(--card); border-radius: calc(12px * var(--hu)); }
@@ -193,12 +193,12 @@
   .tag.braking .brake { opacity: 1; }
   #graph { right: calc(48px * var(--hu)); bottom: calc(60px * var(--hu)); width: calc(572px * var(--hu)); aspect-ratio: 572 / 330; }
   #graph canvas { width: 100%; height: 100%; display: block; }
-  #lower, #tip-lower { left: calc(44px * var(--hu)); bottom: calc(40px * var(--hu)); display: grid; justify-items: start; gap: calc(6px * var(--hu));
+  #lower, #tip-lower, #turn-lower { left: calc(44px * var(--hu)); bottom: calc(40px * var(--hu)); display: grid; justify-items: start; gap: calc(6px * var(--hu));
     padding: calc(16px * var(--hu)) calc(24px * var(--hu)); border-radius: calc(12px * var(--hu)); background: var(--card); box-shadow: var(--edge); opacity: 0; }
-  #lower b, #tip-lower b { font-size: calc(38px * var(--hu)); letter-spacing: -0.01em; }
-  #lower span, #tip-lower span { font-size: calc(26px * var(--hu)); color: var(--dark); }
-  #tip-lower { bottom: calc(80px * var(--hu)); transition: opacity 0.4s; }
-  #tip-lower b, #tip-lower span { white-space: nowrap; }
+  #lower b, #tip-lower b, #turn-lower b { font-size: calc(38px * var(--hu)); letter-spacing: -0.01em; }
+  #lower span, #tip-lower span, #turn-lower span { font-size: calc(26px * var(--hu)); color: var(--dark); }
+  #tip-lower, #turn-lower { bottom: calc(80px * var(--hu)); transition: opacity 0.4s; }
+  #tip-lower b, #tip-lower span, #turn-lower b, #turn-lower span { white-space: nowrap; }
   /* the starburst over the OFF car: pops in once and stays still */
   #tip-burst { left: 0; top: 0; width: max(190px, calc(330px * var(--hu))); aspect-ratio: 240 / 150; will-change: transform; }
   #tip-burst .burst { position: relative; width: 100%; height: 100%; display: grid; place-items: center;
@@ -210,14 +210,14 @@
   @keyframes burst-pop { from { opacity: 0; transform: scale(0.4) rotate(-10deg); } }
   @media (prefers-reduced-motion: reduce) { #tip-burst .burst { animation: none; } }
   /* tip-over test: a roll readout per car, like a meter: who, the angle, a thin 0 to 90° scale with the firmware's 50° tick, what the motors do */
-  #tip-gauges { display: contents; }                 /* on a wide screen each readout is fixed to its car */
+  #tip-gauges, #turn-gauges { display: contents; }                 /* on a wide screen each readout is fixed to its car */
   /* two lines: who and the angle, then what the motors do; the roll fills a thin line along the bottom edge (the dark tick is 50°) */
   .ttag .box { position: relative; display: grid; gap: calc(4px * var(--hu)); width: calc(270px * var(--hu)); height: auto; overflow: hidden;
     padding: calc(12px * var(--hu)) calc(16px * var(--hu)) calc(16px * var(--hu)); border-radius: calc(10px * var(--hu)); box-shadow: var(--edge); }
   .ttag .box::after { display: none; }
   .ttag .top { display: flex; align-items: baseline; justify-content: space-between; gap: calc(10px * var(--hu)); font-size: calc(21px * var(--hu)); white-space: nowrap; }
   .ttag .who { font-weight: 800; color: var(--dark); }
-  #tip-ON .who { color: #17803d; }
+  #tip-ON .who, #turn-ON .who { color: #17803d; }
   .ttag .val { color: var(--gray); }
   .ttag .deg { color: var(--ink); font-variant-numeric: tabular-nums; }
   .ttag .state { font-size: calc(16px * var(--hu)); font-weight: 600; color: var(--dark); }
@@ -232,7 +232,7 @@
     display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto auto; overflow: hidden; border-radius: 12px; background: #2b2b2e; color: #ececf0;
     box-shadow: 0 2px 10px rgba(18, 18, 22, 0.16); font-size: max(12px, calc(17px * var(--hu))); pointer-events: auto; }
   #term header { display: flex; align-items: center; gap: 6px; padding: 8px 8px 8px 12px; background: #1565c0; color: #fff; }
-  @media (min-aspect-ratio: 801/1000) { body.tip #term { bottom: calc(120px * var(--hu)); } }   /* no graph under it on the tip-over screen */
+  @media (min-aspect-ratio: 801/1000) { body.nobar #term { bottom: calc(120px * var(--hu)); } }   /* no graph under it on the turn and tip-over screens */
   #term header b { font-size: 1.1em; }
   /* the device name gives way first when the bar is narrow; the buttons stay at the right end */
   #term header .dev { display: inline-flex; align-items: center; gap: 2px; min-width: 0; margin-right: auto; overflow: hidden; white-space: nowrap; font-size: 0.85em; opacity: 0.85; }
@@ -245,11 +245,11 @@
   .tag .bt svg { width: 72%; height: 72%; }
   .tag.linked .bt { display: grid; }
   .tag.linked .box { box-shadow: 0 0 0 1.5px #1565c0; }
-  #link, #tip-link { left: 0; top: 0; width: 100%; height: 100%; overflow: visible; opacity: 0; }
-  #link path, #tip-link path { fill: none; stroke: #1565c0; stroke-opacity: 0.6; stroke-width: 2; stroke-dasharray: 1 6; stroke-linecap: round; }
-  #link.live path, #tip-link.live path { animation: flow 0.5s linear infinite; }
+  #link, #tip-link, #turn-link { left: 0; top: 0; width: 100%; height: 100%; overflow: visible; opacity: 0; }
+  #link path, #tip-link path, #turn-link path { fill: none; stroke: #1565c0; stroke-opacity: 0.6; stroke-width: 2; stroke-dasharray: 1 6; stroke-linecap: round; }
+  #link.live path, #tip-link.live path, #turn-link.live path { animation: flow 0.5s linear infinite; }
   @keyframes flow { to { stroke-dashoffset: -8; } }
-  @media (prefers-reduced-motion: reduce) { #link.live path, #tip-link.live path { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { #link.live path, #tip-link.live path, #turn-link.live path { animation: none; } }
   #term header button { border: 0; border-radius: 6px; background: rgba(255, 255, 255, 0.16); color: #fff; font: inherit; font-size: 0.85em; white-space: nowrap; cursor: pointer; }
   #term-sw { padding: 4px 8px; }
   #term header b, #term header button { flex: none; }
@@ -324,24 +324,24 @@
 
   /* a tall phone: the graph or the terminal spans the width above the buttons (tabs pick one), the note sits on top */
   @media (max-aspect-ratio: 4/5) {
-    /* --dock: from the bottom of the screen to just above the button bar (measured in the script; no bar on the tip-over screen) */
+    /* --dock: from the bottom of the screen to just above the button bar (measured in the script; no bar on the turn and tip-over screens) */
     :root { --dock: calc(108px + env(safe-area-inset-bottom, 0px)); }
-    body.tip { --dock: calc(12px + env(safe-area-inset-bottom, 0px)); }
+    body.nobar { --dock: calc(12px + env(safe-area-inset-bottom, 0px)); }
     #graph { left: 12px; right: 12px; width: auto; bottom: var(--dock); }
     #term { left: 12px; right: 12px; width: auto; top: auto; height: min(300px, 40vh); bottom: var(--dock); font-size: 11px; }
     #term header { padding: 6px 6px 6px 10px; }
     body.show-graph #term, body:not(.show-graph) #graph { display: none; }
     #sim-ui #tabs { display: flex; }
     #foot { left: 14px; bottom: calc(var(--dock) + 8px + (100vw - 24px) * 0.577); font-size: 10px; }
-    body:not(.show-graph) #foot, #tip-foot { left: 14px; bottom: calc(var(--dock) + 8px + min(300px, 40vh)); font-size: 10px; }
+    body:not(.show-graph) #foot, #tip-foot, #turn-foot { left: 14px; bottom: calc(var(--dock) + 8px + min(300px, 40vh)); font-size: 10px; }
     #lower { bottom: calc(var(--dock) + 12px); }
-    body.tip #term { height: min(240px, 30vh); }      /* no graph tab here: a shorter terminal leaves room for the cars */
+    body.nobar #term { height: min(240px, 30vh); }      /* no graph tab here: a shorter terminal leaves room for the cars */
     /* the two roll readouts become one panel across the top, under the back button: OFF | ON */
-    #tip-gauges { display: grid; grid-template-columns: 1fr 1fr; left: 12px; right: 12px; top: 56px; overflow: hidden;
+    #tip-gauges, #turn-gauges { display: grid; grid-template-columns: 1fr 1fr; left: 12px; right: 12px; top: 56px; overflow: hidden;
       border-radius: 10px; background: var(--card); box-shadow: var(--edge); }
-    #tip-ui .ttag { position: static; display: block; transform: none !important; }
+    #tip-ui .ttag, #turn-ui .ttag { position: static; display: block; transform: none !important; }
     .ttag .box { width: auto; gap: 3px; padding: 8px 12px 12px; border-radius: 0; background: none; box-shadow: none; }
-    #tip-ON .box { border-left: 1px solid var(--line); }
+    #tip-ON .box, #turn-ON .box { border-left: 1px solid var(--line); }
     .ttag .top { gap: 6px; font-size: 12px; }
     .ttag .state { font-size: 10px; line-height: 1.3; }
     .ttag .gauge { height: 3px; }
@@ -350,15 +350,15 @@
     #drag-hint { gap: 8px; padding: 6px 12px 6px 8px; font-size: 12px; }
     #drag-hint svg { width: 36px; height: 34px; }
     #drag-hint { grid-template-columns: auto minmax(0, 1fr); width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box; white-space: normal; }
-    body.tip #tip-foot { bottom: calc(var(--dock) + 8px + min(240px, 30vh)); }
-    #tip-lower { left: 12px; right: 12px; bottom: calc(var(--dock) + 28px + min(240px, 30vh)); }
+    body.nobar #tip-foot, body.nobar #turn-foot { bottom: calc(var(--dock) + 8px + min(240px, 30vh)); }
+    #tip-lower, #turn-lower { left: 12px; right: 12px; bottom: calc(var(--dock) + 28px + min(240px, 30vh)); }
     /* a folded terminal is just its title bar at the bottom: the notes above it come down with it */
     #term.folded { height: auto !important; }
-    body.term-folded:not(.show-graph) #foot, body.term-folded #tip-foot { bottom: calc(var(--dock) + 54px); }
-    body.term-folded #tip-lower { bottom: calc(var(--dock) + 74px); }
-    #tip-lower { padding: 7px 10px; gap: 2px; border-radius: 8px; }
-    #tip-lower b { font-size: min(12.5px, 3.4vw); }
-    #tip-lower span { font-size: min(11px, 3vw); }
+    body.term-folded:not(.show-graph) #foot, body.term-folded #tip-foot, body.term-folded #turn-foot { bottom: calc(var(--dock) + 54px); }
+    body.term-folded #tip-lower, body.term-folded #turn-lower { bottom: calc(var(--dock) + 74px); }
+    #tip-lower, #turn-lower { padding: 7px 10px; gap: 2px; border-radius: 8px; }
+    #tip-lower b, #turn-lower b { font-size: min(12.5px, 3.4vw); }
+    #tip-lower span, #turn-lower span { font-size: min(11px, 3vw); }
     #lower { padding: 7px 10px; border-radius: 8px; }
     #sim-stats { display: none; }
     #sim-ui #bar { left: 12px; right: 12px; max-width: none; transform: none; gap: 2px 4px; font-size: 11.5px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
@@ -420,15 +420,20 @@
         <span><b>경사 주행 시뮬레이션</b></span>
         <span class="go" aria-hidden="true">→</span>
       </button>
-      <button class="entry" data-go="tip" style="--i: 5">
+      <button class="entry" data-go="turn" style="--i: 5">
         <span class="no">03</span>
+        <span><b>회전 코스 시뮬레이션</b></span>
+        <span class="go" aria-hidden="true">→</span>
+      </button>
+      <button class="entry" data-go="tip" style="--i: 6">
+        <span class="no">04</span>
         <span><b>전도 상황 시뮬레이션</b></span>
         <span class="go" aria-hidden="true">→</span>
       </button>
     </nav>
-    <p class="hint" style="--i: 6"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 바로 열기<span class="sep"></span><kbd>Esc</kbd> 메뉴로</p>
+    <p class="hint" style="--i: 7"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> 바로 열기<span class="sep"></span><kbd>Esc</kbd> 메뉴로</p>
   </div>
-  <dl class="spec" style="--i: 7">
+  <dl class="spec" style="--i: 8">
     <div><dt>프레임</dt><dd>포맥스 5T 데크</dd></div>
     <div><dt>구동</dt><dd>TT모터 2개, L298N</dd></div>
     <div><dt>센서</dt><dd>MPU6050, FC-03 2개</dd></div>
@@ -518,6 +523,26 @@
   <div id="sim-stats"></div>
 </section>
 
+<!-- turn course: both cars spin on the spot to the right at full output and stop after 90° -->
+<section id="turn-ui" class="screen off">
+  <div class="hud" id="turn-gauges">
+      <div class="hud tag ttag" id="turn-OFF"><div class="box">
+        <div class="top"><span class="who">제어 OFF</span><span class="val">각속도 <b class="deg">0°/s</b></span></div>
+        <div class="gauge"><i class="fill"></i></div>
+        <span class="state">출발 대기</span>
+      </div></div>
+      <div class="hud tag ttag" id="turn-ON"><div class="box">
+        <div class="top"><span class="who">제어 ON</span><span class="val">각속도 <b class="deg">0°/s</b></span></div>
+        <div class="gauge"><i class="fill"></i></div>
+        <span class="state">출발 대기</span>
+      </div></div>
+  </div>
+  <svg class="hud" id="turn-link" aria-hidden="true"><path d="" /></svg>
+  <div class="hud" id="turn-foot">시뮬레이션, 넘어지는 움직임은 단순화한 계산 (실측 아님)</div>
+  <div class="hud" id="turn-lower"><b>제어 ON: 빨리 돌수록 목표 속도를 낮춰 천천히 회전</b><span>제어 OFF: 최대 출력으로 돌다 멈추는 순간 넘어짐</span></div>
+  <div class="hud" id="turn-count" hidden></div>
+</section>
+
 <!-- tip-over test: both cars drive straight, the right rear wheel runs up a wedge and they fall onto their left side -->
 <section id="tip-ui" class="screen off">
   <!-- the two roll readouts follow their cars on a wide screen; on a phone they sit side by side in one panel at the top -->
@@ -546,7 +571,7 @@
 <!-- back to the menu from either simulation, top left -->
 <button id="back" type="button" data-go="menu">← 메뉴</button>
 
-<!-- Bluetooth terminal, shared by the slope run and the tip-over test -->
+<!-- Bluetooth terminal, shared by the three simulations -->
 <section id="term" class="screen off" aria-label="블루투스 시리얼 터미널">
   <header>
     <b>터미널</b>
@@ -598,8 +623,8 @@
       <li><code>i</code> IMU 점검</li>
       <li><code>l</code> <code>r</code> 왼쪽 / 오른쪽 바퀴만 2초 (바퀴 띄우고)</li>
       <li><code>?</code> 상태, 명령 목록</li>
-      <li><code>f</code> 직진 주행 (시뮬레이션은 전도 시험 화면에서만)</li>
-      <li><code>t</code> 회전 주행 (실제 차만)</li>
+      <li><code>t</code> 회전 주행 (시뮬레이션은 03 회전 코스 화면)</li>
+      <li><code>f</code> 직진 주행 (시뮬레이션은 04 전도 상황 화면)</li>
     </ul>
     <h3>주행 끝</h3>
     <p>멈춘 이유 한 줄(주행 거리 도달 1.6 m, 주행 시간 초과 8초, 수동 정지, 기울기 초과로 정지)과 요약 한 줄(코스, 모드, 최고 속도, 주행 거리, 회전각, IMU 버린 샘플 수).</p>
@@ -644,6 +669,7 @@
 import * as THREE from 'three/webgpu';
 import { createBlueprint } from './app/blueprint.js';
 import { createSim } from './app/sim.js';
+import { createTurn } from './app/turn.js';
 import { createTip } from './app/tip.js';
 import { createTerminal } from './app/terminal.js';
 
@@ -672,6 +698,7 @@ const hint = (() => {
     model: touch ? '손가락으로 돌리고, 부품을 눌러 보세요' : '드래그해서 돌리고, 부품에 마우스를 올려 보세요',
     sim: touch ? '차가 서 있는 동안 손가락으로 둘러볼 수 있어요' : '차가 서 있는 동안 드래그해서 둘러볼 수 있어요',
     tip: touch ? '출발 전과 끝난 뒤에 손가락으로 둘러볼 수 있어요' : '출발 전과 끝난 뒤에 드래그해서 둘러볼 수 있어요',
+    turn: touch ? '출발 전과 끝난 뒤에 손가락으로 둘러볼 수 있어요' : '출발 전과 끝난 뒤에 드래그해서 둘러볼 수 있어요',
   };
   const seen = new Set();
   let timer = 0;
@@ -704,13 +731,14 @@ function showTab(which) {
 document.querySelectorAll('#tabs button').forEach((b) => { b.onclick = () => showTab(b.dataset.tab); });
 
 const bp = createBlueprint({ renderer, backend, restoreSize: resize });
-const term = createTerminal({ onCommand: (c) => (mode === 'tip' ? tip : sim).command(c) });
+const term = createTerminal({ onCommand: (c) => (runs[mode] ?? sim).command(c) });
 const sim = createSim({
   renderer, backend, term,
   onReady: () => { showTab('term'); hint.show('sim', 300); },   // waiting for 's': the terminal comes to the front
   onStop: () => hint.show('sim', 400),
 });
 // the drag hint shows while the cars wait at the start, and goes away when they start (it would cover the fall)
+const turn = createTurn({ renderer, term, onStart: () => hint.hide() });
 const tip = createTip({ renderer, term, onStart: () => hint.hide() });
 
 // high quality drawing (ambient occlusion on a multisampled pass): on for computers with WebGPU,
@@ -718,6 +746,7 @@ const tip = createTip({ renderer, term, onStart: () => hint.hide() });
 const hq = backend === 'WebGPU' && !matchMedia('(pointer: coarse)').matches && Math.min(innerWidth, innerHeight) > 500;
 bp.setHQ(hq);
 sim.setHQ(hq);
+turn.setHQ(hq);
 tip.setHQ(hq);
 
 // on a phone the panel shows only the camera stops until 더보기 is pressed
@@ -743,6 +772,7 @@ function resize() {
   document.documentElement.style.setProperty('--hu', hud);
   bp.resize(w, h);
   sim.resize(w, h, hud);
+  turn.resize(w, h);
   tip.resize(w, h);
 }
 resize();
@@ -761,8 +791,8 @@ addEventListener('resize', dock);
 // Going between the two scenes passes behind a short curtain.
 // The address keeps the screen (#model, #sim), so the browser's back button works.
 // ------------------------------------------------------------
-const screens = { menu: $('menu'), model: $('model-ui'), sim: $('sim-ui'), tip: $('tip-ui') };
-const runs = { sim, tip };                             // the two screens with their own scene and the terminal
+const screens = { menu: $('menu'), model: $('model-ui'), sim: $('sim-ui'), turn: $('turn-ui'), tip: $('tip-ui') };
+const runs = { sim, turn, tip };                       // the screens with their own scene and the terminal
 const curtain = $('curtain');
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 // wait for the next drawn frame, but never longer than 100 ms (a hidden tab draws no frames)
@@ -779,15 +809,15 @@ async function apply(next) {
   if (swap) { curtain.classList.add('on'); await wait(260); }
   for (const [k, el] of Object.entries(screens)) el.classList.toggle('off', k !== next);
   $('term').classList.toggle('off', !runs[next]);
-  document.body.classList.toggle('tip', next === 'tip');
+  document.body.classList.toggle('nobar', next === 'tip' || next === 'turn');   // no button bar under these two
   document.body.classList.toggle('runs', !!runs[next]);   // the back button shows on both simulations
-  $('term-sw').hidden = next === 'tip';               // the terminal talks to the ON car only on the tip-over screen
+  $('term-sw').hidden = next === 'tip' || next === 'turn';   // on these two the terminal talks to the ON car only
   if (next === 'model') hint.show('model');
   if (runs[prev]) runs[prev].exit();
   if (runs[next]) {
     if (!runs[prev]) bp.exit();
     active = runs[next];
-    if (next === 'tip') { showTab('term'); hint.show('tip', 1200); }
+    if (next === 'tip' || next === 'turn') { showTab('term'); hint.show(next, 1200); }
     runs[next].enter();
   } else {
     active = bp;
@@ -797,7 +827,7 @@ async function apply(next) {
 }
 let queue = Promise.resolve();
 const request = (next) => (queue = queue.then(() => apply(next)));
-const fromHash = () => ({ '#model': 'model', '#sim': 'sim', '#tip': 'tip' })[location.hash] ?? 'menu';
+const fromHash = () => ({ '#model': 'model', '#sim': 'sim', '#turn': 'turn', '#tip': 'tip' })[location.hash] ?? 'menu';
 function go(next) {
   if (fromHash() !== next) history.pushState(null, '', next === 'menu' ? location.pathname + location.search : `#${next}`);
   request(next);
@@ -805,7 +835,7 @@ function go(next) {
 window.addEventListener('popstate', () => request(fromHash()));
 window.addEventListener('hashchange', () => request(fromHash()));
 document.querySelectorAll('[data-go]').forEach((b) => { b.onclick = () => go(b.dataset.go); });
-const KEYS = { 1: 'model', 2: 'sim', 3: 'tip' };
+const KEYS = { 1: 'model', 2: 'sim', 3: 'turn', 4: 'tip' };
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && mode !== 'menu') go('menu');
   else if (mode === 'menu' && KEYS[e.key]) go(KEYS[e.key]);
@@ -826,7 +856,7 @@ if (mode === 'menu') $('menu').classList.add('intro');
 curtain.classList.remove('on');
 curtain.querySelector('p').textContent = '';
 
-window.slope = { go, bp, sim, tip, renderer };
+window.slope = { go, bp, sim, turn, tip, renderer };
 </script>
 </body>
 </html>
