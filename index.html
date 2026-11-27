@@ -385,6 +385,87 @@
   #sim-stats { position: fixed; right: calc(48px * var(--u)); bottom: calc(28px * var(--u)); color: var(--foot); font-size: max(11px, calc(16px * var(--u)));
     font-variant-numeric: tabular-nums; }
 
+  /* ---------------- source code: the firmware, a note beside each part ---------------- */
+  #code-ui { --ct: 56px; position: fixed; inset: 0; z-index: 6; overflow-y: auto; overscroll-behavior: contain; background: var(--stage);
+    scroll-padding-top: calc(var(--ct) + 14px); }
+  #code-ui.off { transform: translateY(10px); }
+  .code-top { position: sticky; top: 0; z-index: 2; box-sizing: border-box; height: var(--ct); display: flex; align-items: center; gap: 12px;
+    padding: 0 max(16px, 2.5vw); background: rgba(231, 231, 231, 0.94); box-shadow: 0 1px 0 var(--line); }
+  .code-top h2 { margin: 0; font: 700 16px var(--mono); white-space: nowrap; }
+  .code-top .meta { color: var(--muted); font-size: 13px; white-space: nowrap; }
+  .code-top .get { margin-left: auto; text-decoration: none; white-space: nowrap; }
+  .code-body { display: grid; grid-template-columns: 196px minmax(0, 1fr); gap: 20px; max-width: 1600px; margin: 0 auto;
+    padding: 16px max(16px, 2.5vw) 56px; }
+  .code-nav { position: sticky; top: calc(var(--ct) + 16px); align-self: start; display: grid; gap: 1px;
+    max-height: calc(100vh - var(--ct) - 32px); overflow-y: auto; scrollbar-width: thin; }
+  .code-nav button { padding: 6px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font: inherit; font-size: 13px;
+    line-height: 1.35; text-align: left; cursor: pointer; }
+  .code-nav button:hover { color: var(--ink); background: rgba(255, 255, 255, 0.6); }
+  .code-nav button.on { background: var(--paper); color: var(--ink); font-weight: 700; box-shadow: var(--edge); }
+  .code-parts { display: grid; gap: 14px; min-width: 0; }
+  .code-msg { margin: 40px 0; color: var(--muted); text-align: center; }
+  .part { display: grid; grid-template-columns: minmax(300px, 35%) minmax(0, 1fr); border-radius: 10px; background: var(--paper); box-shadow: var(--edge); }
+  .part .note { align-self: start; min-width: 0; padding: 18px 22px 12px; font-size: 14.5px; line-height: 1.7; }
+  .part .note.stick { position: sticky; top: calc(var(--ct) + 14px); }
+  .note h3 { margin: 0; font-size: 18px; line-height: 1.35; text-wrap: balance; }
+  .note .range { margin: 2px 0 12px; color: var(--gray); font: 12px var(--mono); }
+  .note p, .note ul, .note table { margin: 0 0 12px; }
+  .note ul { padding-left: 1.15em; }
+  .note li + li { margin-top: 4px; }
+  /* a chain of steps: dots on one thin rule */
+  .note ul.flow { padding-left: 14px; list-style: none; border-left: 1.5px solid #bfc3c9; }
+  .note ul.flow li { position: relative; }
+  .note ul.flow li::before { content: ''; position: absolute; left: -18.25px; top: 0.62em; width: 7px; height: 7px; border-radius: 50%; background: var(--ink); }
+  .note ul.flow b { margin-right: 6px; }
+  .note code, .lref { padding: 0.05em 0.35em; border-radius: 4px; background: #eef0f3; color: var(--ink); font-family: var(--mono); font-size: 0.9em; }
+  .lref { border: 0; cursor: pointer; }
+  .lref:hover, .lref:focus-visible { outline: none; background: var(--ink); color: #fff; }
+  .note .eq { padding: 10px 12px; border-left: 2px solid var(--ink); background: #f4f5f7; font: 13px/1.6 var(--mono); }
+  .note table { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 1.5; }
+  .note th, .note td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  .note th { padding-right: 12px; font-weight: 700; white-space: nowrap; }
+  .note a { color: var(--ink); text-underline-offset: 3px; }
+  .src { min-width: 0; margin: 0; padding: 16px 0; border-left: 1px solid var(--line); border-radius: 0 10px 10px 0; background: #f7f8fa;
+    color: #24262b; font: 13px/1.62 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 2; }
+  .src code { font: inherit; }
+  .src .l { display: block; position: relative; padding: 0 18px 0 calc(4ch + 24px); }
+  .src .l::before { content: attr(data-n); position: absolute; left: 0; width: calc(4ch + 6px); text-align: right; color: #a4a8ae; user-select: none; }
+  .src .l.mk { background: rgba(18, 18, 22, 0.05); box-shadow: inset 3px 0 0 var(--ink); }
+  .src .l.mk::before { color: var(--ink); }
+  .src .l.flash { animation: line-flash 1.6s ease-out; }
+  @keyframes line-flash { 0%, 30% { background: rgba(214, 48, 40, 0.16); } }
+  .t-com { color: #687079; }
+  .t-str { color: #1d7a3a; }
+  .t-num { color: #b25109; }
+  .t-kw, .t-pp { color: #b3261e; }
+  .t-ty { color: #2154b0; }
+  .t-cn { color: #7a3aa6; }
+  .t-fn { color: var(--ink); font-weight: 700; }
+  @media (max-width: 860px) {
+    /* a phone: the part list becomes one row under the top bar, each note sits above its code */
+    #code-ui { --ct: 46px; scroll-padding-top: calc(var(--ct) + 50px); }
+    .code-top { gap: 8px; padding: 0 12px; }
+    .code-top h2 { font-size: 13.5px; }
+    .code-top .meta { font-size: 11px; }
+    .code-top .btn { padding: 5px 8px; font-size: 12px; }
+    .code-body { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 0 10px 32px; }
+    .code-nav { top: var(--ct); z-index: 1; display: flex; gap: 4px; max-height: none; overflow-x: auto; margin: 0 -10px; padding: 8px 10px;
+      background: rgba(231, 231, 231, 0.94); scrollbar-width: none; mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+    .code-nav::-webkit-scrollbar { display: none; }
+    .code-nav button { flex: none; padding: 5px 10px; background: rgba(255, 255, 255, 0.7); font-size: 12px; white-space: nowrap; }
+    .part { grid-template-columns: minmax(0, 1fr); border-radius: 8px; }
+    .part .note, .part .note.stick { position: static; padding: 12px 14px 4px; font-size: 13px; line-height: 1.65; }
+    .note h3 { font-size: 15px; }
+    .note .range { margin-bottom: 8px; font-size: 11px; }
+    .note p, .note ul, .note table { margin-bottom: 10px; }
+    .note .eq { padding: 8px 10px; font-size: 11.5px; }
+    .note table { font-size: 12px; }
+    .src { padding: 10px 0; border-left: 0; border-top: 1px solid var(--line); border-radius: 0 0 8px 8px; font-size: 11px; line-height: 1.6; }
+    .src .l { padding: 0 10px 0 calc(3ch + 16px); }
+    .src .l::before { width: calc(3ch + 4px); }
+  }
+  @media (max-width: 480px) { .code-top .meta { display: none; } }
+
   /* ---------------- curtain between the two scenes, and while loading ---------------- */
   #curtain { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--stage);
     opacity: 0; visibility: hidden; transition: opacity 0.25s, visibility 0s 0.25s; }
@@ -436,10 +517,15 @@
         <span><b>전도 상황 시뮬레이션</b></span>
         <span class="go" aria-hidden="true">→</span>
       </button>
+      <button class="entry" data-go="code" style="--i: 7">
+        <span class="no">05</span>
+        <span><b>소스코드</b></span>
+        <span class="go" aria-hidden="true">→</span>
+      </button>
     </nav>
-    <p class="hint" style="--i: 7"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> 바로 열기<span class="sep"></span><kbd>Esc</kbd> 메뉴로</p>
+    <p class="hint" style="--i: 8"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd><kbd>5</kbd> 바로 열기<span class="sep"></span><kbd>Esc</kbd> 메뉴로</p>
   </div>
-  <dl class="spec" style="--i: 8">
+  <dl class="spec" style="--i: 9">
     <div><dt>프레임</dt><dd>포맥스 5T 데크</dd></div>
     <div><dt>구동</dt><dd>TT모터 2개, L298N</dd></div>
     <div><dt>센서</dt><dd>MPU6050, FC-03 2개</dd></div>
@@ -577,6 +663,20 @@
   <div class="hud" id="tip-count" hidden></div>
 </section>
 
+<!-- source code: the firmware with a note beside each part -->
+<section id="code-ui" class="screen off" aria-label="소스코드">
+  <header class="code-top">
+    <button class="btn back" type="button" data-go="menu">← 메뉴</button>
+    <h2>prj_test3.ino</h2>
+    <span class="meta"></span>
+    <a class="btn get" href="firmware/prj_test3.ino" download="prj_test3.ino">파일 받기</a>
+  </header>
+  <div class="code-body">
+    <nav class="code-nav" aria-label="코드 부분"></nav>
+    <div class="code-parts"><p class="code-msg">코드를 불러오는 중</p></div>
+  </div>
+</section>
+
 <!-- back to the menu from either simulation, top left -->
 <button id="back" type="button" data-go="menu">← 메뉴</button>
 
@@ -681,6 +781,7 @@ import { createSim } from './app/sim.js';
 import { createTurn } from './app/turn.js';
 import { createTip } from './app/tip.js';
 import { createTerminal } from './app/terminal.js';
+import { createCode } from './app/code.js';
 
 const $ = (id) => document.getElementById(id);
 const app = $('app');
@@ -749,6 +850,7 @@ const sim = createSim({
 // the drag hint shows while the cars wait at the start, and goes away when they start (it would cover the fall)
 const turn = createTurn({ renderer, term, onStart: () => hint.hide() });
 const tip = createTip({ renderer, term, onStart: () => hint.hide() });
+const code = createCode();
 
 // high quality drawing (ambient occlusion on a multisampled pass): on for computers with WebGPU,
 // off for phones and for the WebGL 2 fallback (that path would lose its edge smoothing), switchable
@@ -802,8 +904,9 @@ addEventListener('resize', dock);
 // Going between the two scenes passes behind a short curtain.
 // The address keeps the screen (#model, #sim), so the browser's back button works.
 // ------------------------------------------------------------
-const screens = { menu: $('menu'), model: $('model-ui'), sim: $('sim-ui'), turn: $('turn-ui'), tip: $('tip-ui') };
+const screens = { menu: $('menu'), model: $('model-ui'), sim: $('sim-ui'), turn: $('turn-ui'), tip: $('tip-ui'), code: $('code-ui') };
 const runs = { sim, turn, tip };                       // the screens with their own scene and the terminal
+const still = { frame() {} };                          // the source code page covers the window: nothing to draw behind it
 const curtain = $('curtain');
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 // wait for the next drawn frame, but never longer than 100 ms (a hidden tab draws no frames)
@@ -832,6 +935,10 @@ async function apply(next) {
     active = runs[next];
     if (next === 'tip' || next === 'turn') { showTab('term'); hint.show(next, 1200); }
     runs[next].enter();
+  } else if (next === 'code') {
+    if (!runs[prev]) bp.exit();
+    active = still;
+    code.enter();
   } else {
     active = bp;
     bp.enter(next, prev === null || swap);
@@ -840,7 +947,7 @@ async function apply(next) {
 }
 let queue = Promise.resolve();
 const request = (next) => (queue = queue.then(() => apply(next)));
-const fromHash = () => ({ '#model': 'model', '#sim': 'sim', '#turn': 'turn', '#tip': 'tip' })[location.hash] ?? 'menu';
+const fromHash = () => ({ '#model': 'model', '#sim': 'sim', '#turn': 'turn', '#tip': 'tip', '#code': 'code' })[location.hash] ?? 'menu';
 function go(next) {
   if (fromHash() !== next) history.pushState(null, '', next === 'menu' ? location.pathname + location.search : `#${next}`);
   request(next);
@@ -848,7 +955,7 @@ function go(next) {
 window.addEventListener('popstate', () => request(fromHash()));
 window.addEventListener('hashchange', () => request(fromHash()));
 document.querySelectorAll('[data-go]').forEach((b) => { b.onclick = () => go(b.dataset.go); });
-const KEYS = { 1: 'model', 2: 'sim', 3: 'turn', 4: 'tip' };
+const KEYS = { 1: 'model', 2: 'sim', 3: 'turn', 4: 'tip', 5: 'code' };
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && mode !== 'menu') go('menu');
   else if (mode === 'menu' && KEYS[e.key]) go(KEYS[e.key]);
