@@ -392,7 +392,6 @@
   .code-top { position: sticky; top: 0; z-index: 2; box-sizing: border-box; height: var(--ct); display: flex; align-items: center; gap: 12px;
     padding: 0 max(16px, 2.5vw); background: rgba(231, 231, 231, 0.94); box-shadow: 0 1px 0 var(--line); }
   .code-top h2 { margin: 0; font: 700 16px var(--mono); white-space: nowrap; }
-  .code-top .meta { color: var(--muted); font-size: 13px; white-space: nowrap; }
   .code-top .get { margin-left: auto; text-decoration: none; white-space: nowrap; }
   .code-body { display: grid; grid-template-columns: 196px minmax(0, 1fr); gap: 20px; max-width: 1600px; margin: 0 auto;
     padding: 16px max(16px, 2.5vw) 56px; }
@@ -407,20 +406,13 @@
   .part { display: grid; grid-template-columns: minmax(300px, 35%) minmax(0, 1fr); border-radius: 10px; background: var(--paper); box-shadow: var(--edge); }
   .part .note { align-self: start; min-width: 0; padding: 18px 22px 12px; font-size: 14.5px; line-height: 1.7; }
   .part .note.stick { position: sticky; top: calc(var(--ct) + 14px); }
-  .note h3 { margin: 0; font-size: 18px; line-height: 1.35; text-wrap: balance; }
-  .note .range { margin: 2px 0 12px; color: var(--gray); font: 12px var(--mono); }
-  .note p, .note ul, .note table { margin: 0 0 12px; }
-  .note ul { padding-left: 1.15em; }
-  .note li + li { margin-top: 4px; }
-  /* a chain of steps: dots on one thin rule */
-  .note ul.flow { padding-left: 14px; list-style: none; border-left: 1.5px solid #bfc3c9; }
-  .note ul.flow li { position: relative; }
-  .note ul.flow li::before { content: ''; position: absolute; left: -18.25px; top: 0.62em; width: 7px; height: 7px; border-radius: 50%; background: var(--ink); }
-  .note ul.flow b { margin-right: 6px; }
-  .note code, .lref { padding: 0.05em 0.35em; border-radius: 4px; background: #eef0f3; color: var(--ink); font-family: var(--mono); font-size: 0.9em; }
-  .lref { border: 0; cursor: pointer; }
-  .lref:hover, .lref:focus-visible { outline: none; background: var(--ink); color: #fff; }
-  .note .eq { padding: 10px 12px; border-left: 2px solid var(--ink); background: #f4f5f7; font: 13px/1.6 var(--mono); }
+  .note h3 { margin: 0 0 8px; font-size: 18px; line-height: 1.35; }
+  .note p, .note table { margin: 0 0 12px; }
+  /* a line number in a note: jumps to that line */
+  .lref { padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-weight: 700; text-decoration: underline;
+    text-decoration-thickness: 1px; text-underline-offset: 3px; cursor: pointer; }
+  .lref:hover, .lref:focus-visible { outline: none; color: var(--red); }
+  .note .eq { font: 13px/1.6 var(--mono); }
   .note table { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 1.5; }
   .note th, .note td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
   .note th { padding-right: 12px; font-weight: 700; white-space: nowrap; }
@@ -436,17 +428,13 @@
   @keyframes line-flash { 0%, 30% { background: rgba(214, 48, 40, 0.16); } }
   .t-com { color: #687079; }
   .t-str { color: #1d7a3a; }
-  .t-num { color: #b25109; }
-  .t-kw, .t-pp { color: #b3261e; }
-  .t-ty { color: #2154b0; }
-  .t-cn { color: #7a3aa6; }
-  .t-fn { color: var(--ink); font-weight: 700; }
+  .t-num { color: #a3241a; }
+  .t-kw { color: var(--ink); font-weight: 700; }
   @media (max-width: 860px) {
     /* a phone: the part list becomes one row under the top bar, each note sits above its code */
     #code-ui { --ct: 46px; scroll-padding-top: calc(var(--ct) + 50px); }
     .code-top { gap: 8px; padding: 0 12px; }
     .code-top h2 { font-size: 13.5px; }
-    .code-top .meta { font-size: 11px; }
     .code-top .btn { padding: 5px 8px; font-size: 12px; }
     .code-body { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 0 10px 32px; }
     .code-nav { top: var(--ct); z-index: 1; display: flex; gap: 4px; max-height: none; overflow-x: auto; margin: 0 -10px; padding: 8px 10px;
@@ -455,16 +443,14 @@
     .code-nav button { flex: none; padding: 5px 10px; background: rgba(255, 255, 255, 0.7); font-size: 12px; white-space: nowrap; }
     .part { grid-template-columns: minmax(0, 1fr); border-radius: 8px; }
     .part .note, .part .note.stick { position: static; padding: 12px 14px 4px; font-size: 13px; line-height: 1.65; }
-    .note h3 { font-size: 15px; }
-    .note .range { margin-bottom: 8px; font-size: 11px; }
-    .note p, .note ul, .note table { margin-bottom: 10px; }
-    .note .eq { padding: 8px 10px; font-size: 11.5px; }
+    .note h3 { margin-bottom: 6px; font-size: 15px; }
+    .note p, .note table { margin-bottom: 10px; }
+    .note .eq { font-size: 11.5px; }
     .note table { font-size: 12px; }
     .src { padding: 10px 0; border-left: 0; border-top: 1px solid var(--line); border-radius: 0 0 8px 8px; font-size: 11px; line-height: 1.6; }
     .src .l { padding: 0 10px 0 calc(3ch + 16px); }
     .src .l::before { width: calc(3ch + 4px); }
   }
-  @media (max-width: 480px) { .code-top .meta { display: none; } }
 
   /* ---------------- curtain between the two scenes, and while loading ---------------- */
   #curtain { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--stage);
@@ -668,7 +654,6 @@
   <header class="code-top">
     <button class="btn back" type="button" data-go="menu">← 메뉴</button>
     <h2>prj_test3.ino</h2>
-    <span class="meta"></span>
     <a class="btn get" href="firmware/prj_test3.ino" download="prj_test3.ino">파일 받기</a>
   </header>
   <div class="code-body">
